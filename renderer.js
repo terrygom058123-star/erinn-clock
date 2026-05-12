@@ -56,6 +56,49 @@ function getTheme(h, m) {
   };
 }
 
+// ─── 오디오 (아이폰 PWA 대응) ──────────────────────────────
+let audioCtx = null;
+
+function unlockAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  // 무음 재생으로 잠금 해제
+  const buf = audioCtx.createBuffer(1, 1, 22050);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  src.connect(audioCtx.destination);
+  src.start(0);
+}
+document.addEventListener("touchstart", unlockAudio, { once: true });
+document.addEventListener("click",      unlockAudio, { once: true });
+
+function playWebSound() {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  [0, 0.45, 0.9].forEach(offset => {
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = "sine";
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.8, now + offset);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.35);
+    osc.start(now + offset);
+    osc.stop(now + offset + 0.35);
+  });
+}
+
+// 알림 권한 요청 (홈 화면 추가 PWA + iOS 16.4 이상에서 동작)
+if ("Notification" in window && Notification.permission === "default") {
+  Notification.requestPermission();
+}
+function sendNotification(label, period, display) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(`⏰ ${label}`, { body: `에린 ${period} ${display}` });
+  }
+}
+
 // ─── 상태 ────────────────────────────────────────────────
 const DEFAULT_ALARMS = [
   {h:0,  m:20}, {h:1,  m:40}, {h:3,  m:0},  {h:4,  m:20},
@@ -159,13 +202,17 @@ function triggerAlarm(alarm) {
   alertTimeEl.textContent = `에린 ${period} ${display}`;
   alertOverlay.classList.add("active");
 
-  // 맥OS 시스템 경고창 (Swift 네이티브 앱)
+  // 맥OS Swift 네이티브 앱
   if (window.webkit?.messageHandlers?.alarm) {
     window.webkit.messageHandlers.alarm.postMessage({ label: alarm.label, period, time: display });
     window.webkit.messageHandlers.playSound.postMessage(null);
   } else if (window.electronAPI) {
     window.electronAPI.triggerAlert({ label: alarm.label, period, time: display });
     window.electronAPI.playSound();
+  } else {
+    // 아이폰/웹 PWA: 웹 오디오 + 알림
+    playWebSound();
+    sendNotification(alarm.label, period, display);
   }
 
   // 탭 제목 깜빡임
@@ -175,11 +222,16 @@ function triggerAlarm(alarm) {
     blink = !blink;
   }, 800);
 
-  // 30초마다 반복
+  // 30초마다 반복 (웹 포함)
   repeatTimer = setInterval(() => {
-    if (window.electronAPI) {
+    if (window.webkit?.messageHandlers?.alarm) {
+      window.webkit.messageHandlers.playSound.postMessage(null);
+    } else if (window.electronAPI) {
       window.electronAPI.triggerAlert({ label: alarm.label, period, time: display });
       window.electronAPI.playSound();
+    } else {
+      playWebSound();
+      sendNotification(alarm.label, period, display);
     }
   }, 30000);
 }
