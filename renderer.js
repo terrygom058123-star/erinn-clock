@@ -57,7 +57,24 @@ function getTheme(h, m) {
 }
 
 // ─── 상태 ────────────────────────────────────────────────
-let alarms = JSON.parse(localStorage.getItem("erinn-alarms") || "[]");
+const DEFAULT_ALARMS = [
+  {h:0,  m:20}, {h:1,  m:40}, {h:3,  m:0},  {h:4,  m:20},
+  {h:5,  m:40}, {h:7,  m:0},  {h:8,  m:20}, {h:9,  m:40},
+  {h:11, m:0},  {h:12, m:20}, {h:13, m:40}, {h:15, m:0},
+  {h:16, m:20}, {h:17, m:40}, {h:19, m:0},  {h:20, m:20},
+  {h:21, m:40}, {h:23, m:0},
+].map((t, i) => ({
+  id: "default_" + i,
+  label: "현실 10분 알람",
+  h: t.h, m: t.m,
+  enabled: true,
+}));
+
+let alarms = JSON.parse(localStorage.getItem("erinn-alarms") || "null");
+if (!alarms) {
+  alarms = DEFAULT_ALARMS;
+  localStorage.setItem("erinn-alarms", JSON.stringify(alarms));
+}
 let offsetSec = parseInt(localStorage.getItem("erinn-offset") || "0", 10);
 let activeAlert = null;
 let titleBlinkTimer = null;
