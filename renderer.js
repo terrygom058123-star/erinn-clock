@@ -65,13 +65,13 @@ const DEFAULT_ALARMS = [
   {h:21, m:40}, {h:23, m:0},
 ].map((t, i) => ({
   id: "default_" + i,
-  label: "현실 10분 알람",
+  label: "굵은 실",
   h: t.h, m: t.m,
   enabled: true,
 }));
 
 let alarms = JSON.parse(localStorage.getItem("erinn-alarms") || "null");
-if (!alarms) {
+if (!alarms || alarms.length === 0) {
   alarms = DEFAULT_ALARMS;
   localStorage.setItem("erinn-alarms", JSON.stringify(alarms));
 }
