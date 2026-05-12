@@ -278,3 +278,11 @@ document.getElementById("btn-calibrate").addEventListener("click", () => {
   offsetNote.textContent = `보정 적용됨 (${offsetSec > 0 ? "+" : ""}${offsetSec}초)`;
   tick();
 });
+
+document.getElementById("btn-load-defaults").addEventListener("click", () => {
+  if (!confirm("기존 알람을 모두 지우고 굵은 실 알람 18개로 교체할까요?")) return;
+  alarms = DEFAULT_ALARMS.map(a => ({ ...a, id: Date.now().toString() + Math.random() }));
+  saveAlarms();
+  renderAlarms();
+  document.getElementById("settings-panel").classList.remove("open");
+});
