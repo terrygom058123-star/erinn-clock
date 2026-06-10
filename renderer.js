@@ -478,12 +478,13 @@ async function fetchMarketItem(itemName) {
     const listings = listData.auction_item || [];
     const history  = histData.auction_history || [];
 
-    const lowestNow    = listings.length ? Math.min(...listings.map(i => i.auction_price_per_unit)) : null;
+    const sorted       = [...listings].sort((a, b) => a.auction_price_per_unit - b.auction_price_per_unit);
+    const lowestNow    = sorted.length ? sorted[0].auction_price_per_unit : null;
     const totalNow     = listings.reduce((s, i) => s + i.item_count, 0);
     const latestTrade  = history.length ? history[0].auction_price_per_unit : null;
-    const firstOptions = listings.length ? (listings[0].item_option || []) : [];
+    const firstOptions = sorted.length ? (sorted[0].item_option || []) : [];
 
-    return { lowestNow, totalNow, latestTrade, listings: listings.length, firstOptions };
+    return { lowestNow, totalNow, latestTrade, listings: listings.length, firstOptions, top10: sorted.slice(0, 10) };
   } catch(e) {
     return null;
   }
@@ -496,6 +497,8 @@ function priceStr(n) {
 }
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+let marketCache = [];  // 최신 결과 캐시
 
 async function loadMarket() {
   const container = document.getElementById("market-list");
@@ -513,13 +516,14 @@ async function loadMarket() {
     await sleep(400);
   }
 
+  marketCache = results;
+
   container.innerHTML = MARKET_ITEMS.map((item, i) => {
     const r = results[i];
     const lowStr   = r?.lowestNow  != null ? priceStr(r.lowestNow)   : null;
     const tradeStr = r?.latestTrade != null ? priceStr(r.latestTrade) : null;
     const countStr = r?.totalNow   != null ? `매물 ${r.totalNow.toLocaleString()}개` : "";
 
-    // 방어/보호 관련 옵션 추출 (첫 번째 매물 기준)
     let optionStr = "";
     if (item.showOptions && r?.firstOptions?.length) {
       const matched = r.firstOptions
@@ -530,7 +534,7 @@ async function loadMarket() {
     }
 
     return `
-    <div class="market-card">
+    <div class="market-card" data-idx="${i}" style="cursor:pointer">
       <div class="market-left">
         <span class="market-icon">${item.icon}</span>
         <div>
@@ -546,16 +550,68 @@ async function loadMarket() {
           : `<div class="market-price none">매물 없음</div>
              <div class="market-history">최근 거래 ${tradeStr ?? "없음"}</div>`
         }
+        <div style="font-size:16px;color:#475569;margin-left:6px">›</div>
       </div>
     </div>`;
   }).join("");
+
+  container.querySelectorAll(".market-card").forEach(card => {
+    card.addEventListener("click", () => openMarketDetail(parseInt(card.dataset.idx)));
+  });
 
   const now = new Date();
   updatedEl.textContent = `${now.toLocaleTimeString("ko-KR")} 기준`;
 }
 
-loadMarket();
-// 3분마다 자동 갱신
-setInterval(loadMarket, 180000);
+// ─── 경매장 상세 모달 ─────────────────────────────────────
+function openMarketDetail(idx) {
+  const item = MARKET_ITEMS[idx];
+  const r    = marketCache[idx];
+  const top10 = r?.top10 || [];
 
+  document.getElementById("mdetail-title").textContent = `${item.icon} ${item.name}`;
+  document.getElementById("mdetail-count").textContent =
+    top10.length ? `최저가 상위 ${top10.length}개` : "매물 없음";
+
+  const listEl = document.getElementById("mdetail-list");
+  if (!top10.length) {
+    listEl.innerHTML = `<div style="text-align:center;color:#475569;padding:24px">매물이 없습니다</div>`;
+  } else {
+    const minPrice = top10[0].auction_price_per_unit;
+    listEl.innerHTML = top10.map((entry, i) => {
+      const p    = entry.auction_price_per_unit;
+      const diff = p - minPrice;
+      const diffStr = diff > 0 ? `<span style="color:#ef4444;font-size:11px">+${diff.toLocaleString()}</span>` : `<span style="color:#22c55e;font-size:11px">최저</span>`;
+      const expire = entry.date_auction_expire
+        ? new Date(entry.date_auction_expire).toLocaleString("ko-KR", { month:"numeric", day:"numeric", hour:"numeric", minute:"numeric" })
+        : "";
+      // 아이템 옵션 중 사용효과만 추출
+      const opts = (entry.item_option || [])
+        .filter(o => o.option_type === "사용 효과")
+        .map(o => o.option_value).join(" · ");
+
+      return `
+      <div class="mdetail-row">
+        <div class="mdetail-num">${i + 1}</div>
+        <div class="mdetail-info">
+          <div class="mdetail-price">${p.toLocaleString()}골드 ${diffStr}</div>
+          ${opts ? `<div class="mdetail-opts">${opts}</div>` : ""}
+          <div class="mdetail-meta">수량 ${entry.item_count}개 · ${expire}</div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  document.getElementById("market-detail-modal").classList.add("open");
+}
+
+document.getElementById("mdetail-close").addEventListener("click", () => {
+  document.getElementById("market-detail-modal").classList.remove("open");
+});
+document.getElementById("market-detail-modal").addEventListener("click", e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove("open");
+});
+
+loadMarket();
+setInterval(loadMarket, 180000);
 document.getElementById("btn-refresh-market").addEventListener("click", loadMarket);

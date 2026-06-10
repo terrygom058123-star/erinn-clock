@@ -195,6 +195,23 @@ body {
 .market-option { font-size: 10px; color: #6366f1; margin-top: 3px; }
 .market-loading { text-align: center; color: #475569; font-size: 13px; padding: 20px 0; }
 
+/* 경매장 상세 */
+.mdetail-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid #1e293b;
+}
+.mdetail-row:last-child { border-bottom: none; }
+.mdetail-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #334155; color: #94a3b8;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.mdetail-info { flex: 1; }
+.mdetail-price { font-size: 15px; font-weight: 700; color: #fbbf24; display: flex; align-items: center; gap: 6px; }
+.mdetail-opts  { font-size: 11px; color: #6366f1; margin-top: 2px; }
+.mdetail-meta  { font-size: 11px; color: #475569; margin-top: 2px; }
+
 .footer-note { margin-top: 16px; font-size: 11px; color: #1e293b; text-align: center; line-height: 1.8; }
 
 /* 알람 추가 모달 */
