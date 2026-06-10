@@ -440,10 +440,10 @@ document.getElementById("btn-load-defaults").addEventListener("click", () => {
 // ─── 경매장 시세 ─────────────────────────────────────────────
 const API_KEY = "test_aeb9189847680d8f952caea4a7fb64961fd9f8398b33c45d051cabd4557c44abefe8d04e6d233bd35cf2fabdeb93fb0d";
 const MARKET_ITEMS = [
-  { name: "굵은 실뭉치",    icon: "🧵", category: "천옷/방직" },
-  { name: "양털",           icon: "🐑", category: "천옷/방직" },
   { name: "최고급 수제붕대", icon: "🩹", category: "소모품" },
   { name: "낙지 츄",        icon: "🐙", category: "식품" },
+  { name: "고급 옷감",      icon: "🪡", category: "천옷/방직" },
+  { name: "향기로운 꿀 우유", icon: "🍯", category: "식품" },
 ];
 
 async function fetchMarketItem(itemName) {
