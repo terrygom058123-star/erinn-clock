@@ -56,6 +56,69 @@ function getTheme(h, m) {
   };
 }
 
+// ─── 작업 타이머 ─────────────────────────────────────────────
+const TASKS = [
+  { id: "bandage",  name: "최고급 수제붕대\n굵은 실뭉치", icon: "🧵", duration: 720  }, // 현실 12분
+  { id: "takoyaki", name: "낙지 츄",                     icon: "🐙", duration: 900  }, // 현실 15분
+];
+
+let taskState = JSON.parse(localStorage.getItem("erinn-tasks") || "{}");
+function saveTaskState() { localStorage.setItem("erinn-tasks", JSON.stringify(taskState)); }
+
+function getRemaining(id) {
+  const t = taskState[id];
+  if (!t) return null;
+  return Math.max(0, t.duration - (Date.now() - t.startedAt) / 1000);
+}
+
+function renderTasks() {
+  const container = document.getElementById("task-timers");
+  if (!container) return;
+  container.innerHTML = TASKS.map(task => {
+    const rem   = getRemaining(task.id);
+    const idle  = rem === null;
+    const done  = rem !== null && rem <= 0;
+    const running = rem !== null && rem > 0;
+    const display = idle ? task.duration : rem;
+    const mm = String(Math.floor(display / 60)).padStart(2, "0");
+    const ss = String(Math.floor(display % 60)).padStart(2, "0");
+    const pct = idle ? 0 : Math.round((1 - rem / taskState[task.id].duration) * 100);
+
+    return `
+    <div class="task-card ${running ? "running" : ""} ${done ? "done" : ""}">
+      <div class="task-left">
+        <span class="task-icon">${task.icon}</span>
+        <div>
+          <div class="task-name">${task.name.replace("\n", "<br>")}</div>
+          <div class="task-sub">현실 ${task.duration/60}분 · 에린 ${task.duration/90}시간</div>
+          ${running ? `<div style="margin-top:6px;width:120px;height:4px;background:#0f172a;border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#22c55e;border-radius:3px;transition:width 1s linear"></div></div>` : ""}
+        </div>
+      </div>
+      <div class="task-right">
+        <div class="task-countdown ${done ? "done" : ""}">${done ? "✅완료!" : `${mm}:${ss}`}</div>
+        ${idle || done
+          ? `<button class="btn-task-start" data-id="${task.id}">▶ 시작</button>`
+          : `<button class="btn-task-reset" data-id="${task.id}">리셋</button>`}
+      </div>
+    </div>`;
+  }).join("");
+
+  container.querySelectorAll(".btn-task-start").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const task = TASKS.find(t => t.id === btn.dataset.id);
+      taskState[task.id] = { startedAt: Date.now(), duration: task.duration, notified: false };
+      saveTaskState(); renderTasks();
+    });
+  });
+  container.querySelectorAll(".btn-task-reset").forEach(btn => {
+    btn.addEventListener("click", () => {
+      delete taskState[btn.dataset.id];
+      saveTaskState(); renderTasks();
+    });
+  });
+}
+renderTasks();
+
 // ─── 오디오 (아이폰 PWA 대응) ──────────────────────────────
 let audioCtx = null;
 
@@ -188,6 +251,19 @@ function tick() {
     lastTriggered[alarm.id] = ts;
     triggerAlarm(alarm);
   });
+
+  // 작업 타이머 완료 체크
+  TASKS.forEach(task => {
+    const t = taskState[task.id];
+    if (!t || t.notified) return;
+    const rem = getRemaining(task.id);
+    if (rem <= 0) {
+      t.notified = true;
+      saveTaskState();
+      triggerTaskAlarm(task);
+    }
+  });
+  renderTasks();
 }
 setInterval(tick, 1000);
 tick();
@@ -234,6 +310,28 @@ function triggerAlarm(alarm) {
       sendNotification(alarm.label, period, display);
     }
   }, 30000);
+}
+
+function triggerTaskAlarm(task) {
+  // 오버레이 표시
+  alertName.textContent = task.name.replace("\n", " · ");
+  alertTimeEl.textContent = "작업 완료! 🎉";
+  alertOverlay.classList.add("active");
+
+  // 소리
+  if (window.webkit?.messageHandlers?.playSound) {
+    window.webkit.messageHandlers.playSound.postMessage(null);
+  } else {
+    playWebSound();
+    sendNotification(task.name.replace("\n", " · "), "", "작업 완료! 🎉");
+  }
+
+  // 탭 제목 깜빡임
+  let blink = false;
+  titleBlinkTimer = setInterval(() => {
+    document.title = blink ? `🔴 ${task.name.split("\n")[0]} 완료!` : "마비노기 에린시계";
+    blink = !blink;
+  }, 800);
 }
 
 function dismissAlert() {
