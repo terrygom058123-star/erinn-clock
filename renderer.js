@@ -439,12 +439,15 @@ document.getElementById("btn-load-defaults").addEventListener("click", () => {
 
 // ─── 경매장 시세 ─────────────────────────────────────────────
 const API_KEY = "test_aeb9189847680d8f952caea4a7fb64961fd9f8398b33c45d051cabd4557c44abefe8d04e6d233bd35cf2fabdeb93fb0d";
-const MARKET_ITEMS = [
-  { name: "최고급 수제 붕대",  icon: "🩹", category: "소모품" },
-  { name: "질겅질겅 낙지츄",  icon: "🐙", category: "식품", showOptions: ["방어","보호","마법 방어","마법 보호"] },
-  { name: "고급 옷감",        icon: "🪡", category: "천옷/방직" },
-  { name: "향기로운 꿀 우유", icon: "🍯", category: "식품" },
+const DEFAULT_MARKET_ITEMS = [
+  { name: "최고급 수제 붕대",  icon: "🩹" },
+  { name: "질겅질겅 낙지츄",  icon: "🐙", showOptions: ["방어","보호","마법 방어","마법 보호"] },
+  { name: "고급 옷감",        icon: "🪡" },
+  { name: "향기로운 꿀 우유", icon: "🍯" },
 ];
+
+let MARKET_ITEMS = JSON.parse(localStorage.getItem("erinn-market-items") || "null") || DEFAULT_MARKET_ITEMS;
+function saveMarketItems() { localStorage.setItem("erinn-market-items", JSON.stringify(MARKET_ITEMS)); }
 
 async function fetchWithTimeout(url, options, ms = 8000) {
   const ctrl = new AbortController();
@@ -550,13 +553,25 @@ async function loadMarket() {
           : `<div class="market-price none">매물 없음</div>
              <div class="market-history">최근 거래 ${tradeStr ?? "없음"}</div>`
         }
-        <div style="font-size:16px;color:#475569;margin-left:6px">›</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-left:6px">
+          <span style="font-size:16px;color:#475569">›</span>
+          <button class="btn-market-del" data-idx="${i}" style="background:none;border:none;color:#334155;font-size:14px;cursor:pointer;line-height:1;padding:2px">✕</button>
+        </div>
       </div>
     </div>`;
   }).join("");
 
   container.querySelectorAll(".market-card").forEach(card => {
     card.addEventListener("click", () => openMarketDetail(parseInt(card.dataset.idx)));
+  });
+  container.querySelectorAll(".btn-market-del").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx);
+      MARKET_ITEMS.splice(idx, 1);
+      saveMarketItems();
+      loadMarket();
+    });
   });
 
   const now = new Date();
@@ -615,3 +630,83 @@ document.getElementById("market-detail-modal").addEventListener("click", e => {
 loadMarket();
 setInterval(loadMarket, 180000);
 document.getElementById("btn-refresh-market").addEventListener("click", loadMarket);
+
+// ─── 경매장 검색 추가 ─────────────────────────────────────
+document.getElementById("btn-market-search").addEventListener("click", () => {
+  document.getElementById("market-search-modal").classList.add("open");
+  document.getElementById("market-search-input").focus();
+});
+document.getElementById("market-search-modal").addEventListener("click", e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove("open");
+});
+document.getElementById("msearch-close").addEventListener("click", () => {
+  document.getElementById("market-search-modal").classList.remove("open");
+});
+
+document.getElementById("btn-msearch-go").addEventListener("click", doMarketSearch);
+document.getElementById("market-search-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") doMarketSearch();
+});
+
+async function doMarketSearch() {
+  const keyword = document.getElementById("market-search-input").value.trim();
+  if (!keyword) return;
+  const resultEl = document.getElementById("msearch-results");
+  resultEl.innerHTML = `<div style="text-align:center;color:#475569;padding:20px">⏳ 검색 중...</div>`;
+
+  const enc = encodeURIComponent(keyword);
+  const headers = { "x-nxopen-api-key": API_KEY };
+  try {
+    const res  = await fetchWithTimeout(
+      `https://open.api.nexon.com/mabinogi/v1/auction/keyword-search?keyword=${enc}`, { headers }
+    );
+    const data = await res.json();
+    const items = data.auction_item || [];
+
+    // 아이템명 기준 중복 제거 + 최저가 집계
+    const map = {};
+    items.forEach(it => {
+      const n = it.item_name;
+      if (!map[n]) map[n] = { name: n, prices: [], count: 0 };
+      map[n].prices.push(it.auction_price_per_unit);
+      map[n].count += it.item_count;
+    });
+    const unique = Object.values(map).sort((a, b) => Math.min(...a.prices) - Math.min(...b.prices));
+
+    if (!unique.length) {
+      resultEl.innerHTML = `<div style="text-align:center;color:#475569;padding:20px">검색 결과 없음</div>`;
+      return;
+    }
+
+    resultEl.innerHTML = unique.map(it => {
+      const low = Math.min(...it.prices);
+      const already = MARKET_ITEMS.some(m => m.name === it.name);
+      return `
+      <div class="msearch-row">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#e2e8f0">${it.name}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">최저 ${low.toLocaleString()}골드 · 매물 ${it.count}개</div>
+        </div>
+        ${already
+          ? `<span style="font-size:12px;color:#475569">추가됨</span>`
+          : `<button class="btn-msearch-add" data-name="${it.name}" style="background:#4f46e5;color:white;border:none;padding:6px 14px;border-radius:10px;font-size:13px;cursor:pointer">+ 추가</button>`
+        }
+      </div>`;
+    }).join("");
+
+    resultEl.querySelectorAll(".btn-msearch-add").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const name = btn.dataset.name;
+        if (MARKET_ITEMS.some(m => m.name === name)) return;
+        MARKET_ITEMS.push({ name, icon: "🏷️" });
+        saveMarketItems();
+        btn.textContent = "✓ 추가됨";
+        btn.disabled = true;
+        btn.style.background = "#334155";
+        loadMarket();
+      });
+    });
+  } catch(e) {
+    resultEl.innerHTML = `<div style="text-align:center;color:#ef4444;padding:20px">오류가 발생했습니다</div>`;
+  }
+}

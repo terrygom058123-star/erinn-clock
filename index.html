@@ -85,7 +85,10 @@
   <!-- 경매장 시세 -->
   <div class="alarm-header" style="margin-top:8px">
     <h2>💰 경매장 시세</h2>
-    <button class="btn-add" id="btn-refresh-market" style="font-size:12px;padding:6px 12px">🔄 새로고침</button>
+    <div style="display:flex;gap:6px">
+      <button class="btn-add" id="btn-market-search" style="font-size:12px;padding:6px 12px">+ 추가</button>
+      <button class="btn-add" id="btn-refresh-market" style="font-size:12px;padding:6px 12px;background:#334155">🔄</button>
+    </div>
   </div>
   <div id="market-list"></div>
   <div id="market-updated" style="text-align:center;font-size:11px;color:#334155;margin-top:4px;margin-bottom:8px"></div>
@@ -112,6 +115,22 @@
       <div class="form-hint">에린 1시간 = 현실 90초 / 에린 1일 = 현실 36분</div>
     </div>
     <button class="btn-confirm" id="btn-confirm">알람 추가</button>
+  </div>
+</div>
+
+<!-- 경매장 검색 모달 -->
+<div class="modal-backdrop" id="market-search-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3>경매장 검색</h3>
+      <button id="msearch-close" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input type="text" id="market-search-input" placeholder="아이템 이름 입력" style="flex:1;background:#334155;color:white;border:none;border-radius:12px;padding:12px 14px;font-size:14px;outline:none"/>
+      <button id="btn-msearch-go" class="btn-confirm" style="width:auto;margin:0;padding:12px 18px;border-radius:12px">검색</button>
+    </div>
+    <div id="msearch-results" style="max-height:320px;overflow-y:auto"></div>
   </div>
 </div>
 

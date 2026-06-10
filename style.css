@@ -196,6 +196,12 @@ body {
 .market-loading { text-align: center; color: #475569; font-size: 13px; padding: 20px 0; }
 
 /* 경매장 상세 */
+.msearch-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid #1e293b;
+}
+.msearch-row:last-child { border-bottom: none; }
+
 .mdetail-row {
   display: flex; align-items: flex-start; gap: 12px;
   padding: 10px 0; border-bottom: 1px solid #1e293b;
