@@ -446,23 +446,41 @@ const MARKET_ITEMS = [
   { name: "향기로운 꿀 우유", icon: "🍯", category: "식품" },
 ];
 
+async function fetchWithTimeout(url, options, ms = 8000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const res = await fetch(url, { ...options, signal: ctrl.signal });
+    clearTimeout(id);
+    return res;
+  } catch(e) { clearTimeout(id); throw e; }
+}
+
 async function fetchMarketItem(itemName) {
   const enc = encodeURIComponent(itemName);
   const headers = { "x-nxopen-api-key": API_KEY };
   try {
-    const [listRes, histRes] = await Promise.all([
-      fetch(`https://open.api.nexon.com/mabinogi/v1/auction/keyword-search?keyword=${enc}`, { headers }),
-      fetch(`https://open.api.nexon.com/mabinogi/v1/auction/history?item_name=${enc}`, { headers }),
-    ]);
+    // 매물 검색
+    const listRes = await fetchWithTimeout(
+      `https://open.api.nexon.com/mabinogi/v1/auction/keyword-search?keyword=${enc}`,
+      { headers }
+    );
     const listData = await listRes.json();
+    await sleep(150);
+
+    // 거래 내역
+    const histRes = await fetchWithTimeout(
+      `https://open.api.nexon.com/mabinogi/v1/auction/history?item_name=${enc}`,
+      { headers }
+    );
     const histData = await histRes.json();
 
     const listings = listData.auction_item || [];
     const history  = histData.auction_history || [];
 
-    const lowestNow   = listings.length ? Math.min(...listings.map(i => i.auction_price_per_unit)) : null;
-    const totalNow    = listings.reduce((s, i) => s + i.item_count, 0);
-    const latestTrade = history.length ? history[0].auction_price_per_unit : null;
+    const lowestNow    = listings.length ? Math.min(...listings.map(i => i.auction_price_per_unit)) : null;
+    const totalNow     = listings.reduce((s, i) => s + i.item_count, 0);
+    const latestTrade  = history.length ? history[0].auction_price_per_unit : null;
     const firstOptions = listings.length ? (listings[0].item_option || []) : [];
 
     return { lowestNow, totalNow, latestTrade, listings: listings.length, firstOptions };
@@ -492,7 +510,7 @@ async function loadMarket() {
     const r = await fetchMarketItem(item.name);
     // 실패(null)면 한 번 재시도
     results.push(r ?? await fetchMarketItem(item.name));
-    await sleep(200);
+    await sleep(400);
   }
 
   container.innerHTML = MARKET_ITEMS.map((item, i) => {
