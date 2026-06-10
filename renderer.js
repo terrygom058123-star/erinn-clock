@@ -477,6 +477,8 @@ function priceStr(n) {
   return `${n.toLocaleString()}골드`;
 }
 
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 async function loadMarket() {
   const container = document.getElementById("market-list");
   const updatedEl = document.getElementById("market-updated");
@@ -484,7 +486,14 @@ async function loadMarket() {
 
   container.innerHTML = `<div class="market-loading">⏳ 시세 불러오는 중...</div>`;
 
-  const results = await Promise.all(MARKET_ITEMS.map(item => fetchMarketItem(item.name)));
+  // 동시 요청 시 테스트 키 제한 → 200ms 간격으로 순차 호출
+  const results = [];
+  for (const item of MARKET_ITEMS) {
+    const r = await fetchMarketItem(item.name);
+    // 실패(null)면 한 번 재시도
+    results.push(r ?? await fetchMarketItem(item.name));
+    await sleep(200);
+  }
 
   container.innerHTML = MARKET_ITEMS.map((item, i) => {
     const r = results[i];
