@@ -192,6 +192,7 @@ body {
 .market-price { font-size: 18px; font-weight: 700; color: #fbbf24; }
 .market-price.none { font-size: 13px; color: #475569; font-weight: 400; }
 .market-history { font-size: 11px; color: #64748b; margin-top: 2px; }
+.market-option { font-size: 10px; color: #6366f1; margin-top: 3px; }
 .market-loading { text-align: center; color: #475569; font-size: 13px; padding: 20px 0; }
 
 .footer-note { margin-top: 16px; font-size: 11px; color: #1e293b; text-align: center; line-height: 1.8; }

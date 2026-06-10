@@ -440,9 +440,9 @@ document.getElementById("btn-load-defaults").addEventListener("click", () => {
 // ─── 경매장 시세 ─────────────────────────────────────────────
 const API_KEY = "test_aeb9189847680d8f952caea4a7fb64961fd9f8398b33c45d051cabd4557c44abefe8d04e6d233bd35cf2fabdeb93fb0d";
 const MARKET_ITEMS = [
-  { name: "최고급 수제붕대", icon: "🩹", category: "소모품" },
-  { name: "낙지 츄",        icon: "🐙", category: "식품" },
-  { name: "고급 옷감",      icon: "🪡", category: "천옷/방직" },
+  { name: "최고급 수제 붕대",  icon: "🩹", category: "소모품" },
+  { name: "질겅질겅 낙지츄",  icon: "🐙", category: "식품", showOptions: ["방어","보호","마법 방어","마법 보호"] },
+  { name: "고급 옷감",        icon: "🪡", category: "천옷/방직" },
   { name: "향기로운 꿀 우유", icon: "🍯", category: "식품" },
 ];
 
@@ -460,11 +460,12 @@ async function fetchMarketItem(itemName) {
     const listings = listData.auction_item || [];
     const history  = histData.auction_history || [];
 
-    const lowestNow  = listings.length ? Math.min(...listings.map(i => i.auction_price_per_unit)) : null;
-    const totalNow   = listings.reduce((s, i) => s + i.item_count, 0);
+    const lowestNow   = listings.length ? Math.min(...listings.map(i => i.auction_price_per_unit)) : null;
+    const totalNow    = listings.reduce((s, i) => s + i.item_count, 0);
     const latestTrade = history.length ? history[0].auction_price_per_unit : null;
+    const firstOptions = listings.length ? (listings[0].item_option || []) : [];
 
-    return { lowestNow, totalNow, latestTrade, listings: listings.length };
+    return { lowestNow, totalNow, latestTrade, listings: listings.length, firstOptions };
   } catch(e) {
     return null;
   }
@@ -491,6 +492,16 @@ async function loadMarket() {
     const tradeStr = r?.latestTrade != null ? priceStr(r.latestTrade) : null;
     const countStr = r?.totalNow   != null ? `매물 ${r.totalNow.toLocaleString()}개` : "";
 
+    // 방어/보호 관련 옵션 추출 (첫 번째 매물 기준)
+    let optionStr = "";
+    if (item.showOptions && r?.firstOptions?.length) {
+      const matched = r.firstOptions
+        .filter(o => o.option_type === "사용 효과" &&
+                     item.showOptions.some(k => o.option_value?.includes(k)))
+        .map(o => o.option_value);
+      if (matched.length) optionStr = matched.join(" · ");
+    }
+
     return `
     <div class="market-card">
       <div class="market-left">
@@ -498,6 +509,7 @@ async function loadMarket() {
         <div>
           <div class="market-name">${item.name}</div>
           <div class="market-category">${countStr || "매물 없음"}</div>
+          ${optionStr ? `<div class="market-option">${optionStr}</div>` : ""}
         </div>
       </div>
       <div class="market-right">
