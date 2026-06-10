@@ -436,3 +436,87 @@ document.getElementById("btn-load-defaults").addEventListener("click", () => {
   renderAlarms();
   document.getElementById("settings-panel").classList.remove("open");
 });
+
+// ─── 경매장 시세 ─────────────────────────────────────────────
+const API_KEY = "test_aeb9189847680d8f952caea4a7fb64961fd9f8398b33c45d051cabd4557c44abefe8d04e6d233bd35cf2fabdeb93fb0d";
+const MARKET_ITEMS = [
+  { name: "굵은 실뭉치",    icon: "🧵", category: "천옷/방직" },
+  { name: "양털",           icon: "🐑", category: "천옷/방직" },
+  { name: "최고급 수제붕대", icon: "🩹", category: "소모품" },
+  { name: "낙지 츄",        icon: "🐙", category: "식품" },
+];
+
+async function fetchMarketItem(itemName) {
+  const enc = encodeURIComponent(itemName);
+  const headers = { "x-nxopen-api-key": API_KEY };
+  try {
+    const [listRes, histRes] = await Promise.all([
+      fetch(`https://open.api.nexon.com/mabinogi/v1/auction/keyword-search?keyword=${enc}`, { headers }),
+      fetch(`https://open.api.nexon.com/mabinogi/v1/auction/history?item_name=${enc}`, { headers }),
+    ]);
+    const listData = await listRes.json();
+    const histData = await histRes.json();
+
+    const listings = listData.auction_item || [];
+    const history  = histData.auction_history || [];
+
+    const lowestNow  = listings.length ? Math.min(...listings.map(i => i.auction_price_per_unit)) : null;
+    const totalNow   = listings.reduce((s, i) => s + i.item_count, 0);
+    const latestTrade = history.length ? history[0].auction_price_per_unit : null;
+
+    return { lowestNow, totalNow, latestTrade, listings: listings.length };
+  } catch(e) {
+    return null;
+  }
+}
+
+function priceStr(n) {
+  if (n == null) return null;
+  if (n >= 10000) return `${(n/10000).toFixed(1).replace(/\.0$/,"")}만골드`;
+  return `${n.toLocaleString()}골드`;
+}
+
+async function loadMarket() {
+  const container = document.getElementById("market-list");
+  const updatedEl = document.getElementById("market-updated");
+  if (!container) return;
+
+  container.innerHTML = `<div class="market-loading">⏳ 시세 불러오는 중...</div>`;
+
+  const results = await Promise.all(MARKET_ITEMS.map(item => fetchMarketItem(item.name)));
+
+  container.innerHTML = MARKET_ITEMS.map((item, i) => {
+    const r = results[i];
+    const lowStr   = r?.lowestNow  != null ? priceStr(r.lowestNow)   : null;
+    const tradeStr = r?.latestTrade != null ? priceStr(r.latestTrade) : null;
+    const countStr = r?.totalNow   != null ? `매물 ${r.totalNow.toLocaleString()}개` : "";
+
+    return `
+    <div class="market-card">
+      <div class="market-left">
+        <span class="market-icon">${item.icon}</span>
+        <div>
+          <div class="market-name">${item.name}</div>
+          <div class="market-category">${countStr || "매물 없음"}</div>
+        </div>
+      </div>
+      <div class="market-right">
+        ${lowStr
+          ? `<div class="market-price">${lowStr}</div>
+             <div class="market-history">최근 거래 ${tradeStr ?? "없음"}</div>`
+          : `<div class="market-price none">매물 없음</div>
+             <div class="market-history">최근 거래 ${tradeStr ?? "없음"}</div>`
+        }
+      </div>
+    </div>`;
+  }).join("");
+
+  const now = new Date();
+  updatedEl.textContent = `${now.toLocaleTimeString("ko-KR")} 기준`;
+}
+
+loadMarket();
+// 3분마다 자동 갱신
+setInterval(loadMarket, 180000);
+
+document.getElementById("btn-refresh-market").addEventListener("click", loadMarket);
