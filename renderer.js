@@ -269,16 +269,25 @@ setInterval(tick, 1000);
 tick();
 
 // ─── 알람 발동 ────────────────────────────────────────────
+function dismissAlert() {
+  activeAlert = null;
+  alertOverlay.classList.remove("active");
+  clearInterval(titleBlinkTimer); titleBlinkTimer = null;
+  clearInterval(repeatTimer);     repeatTimer = null;
+  document.title = "마비노기 에린시계";
+}
+
 function triggerAlarm(alarm) {
+  // 기존 타이머 무조건 정리 후 시작 (누적 방지)
+  dismissAlert();
+
   const { period, display } = formatErrin(alarm.h, alarm.m);
   activeAlert = alarm;
 
-  // 앱 내 빨간 오버레이
   alertName.textContent = alarm.label;
   alertTimeEl.textContent = `에린 ${period} ${display}`;
   alertOverlay.classList.add("active");
 
-  // 맥OS Swift 네이티브 앱
   if (window.webkit?.messageHandlers?.alarm) {
     window.webkit.messageHandlers.alarm.postMessage({ label: alarm.label, period, time: display });
     window.webkit.messageHandlers.playSound.postMessage(null);
@@ -286,24 +295,23 @@ function triggerAlarm(alarm) {
     window.electronAPI.triggerAlert({ label: alarm.label, period, time: display });
     window.electronAPI.playSound();
   } else {
-    // 아이폰/웹 PWA: 웹 오디오 + 알림
     playWebSound();
     sendNotification(alarm.label, period, display);
   }
 
-  // 탭 제목 깜빡임
   let blink = false;
   titleBlinkTimer = setInterval(() => {
     document.title = blink ? `🔴 ${alarm.label} - 에린 알람!` : "마비노기 에린시계";
     blink = !blink;
   }, 800);
 
-  // 30초마다 반복 (웹 포함)
   repeatTimer = setInterval(() => {
-    if (window.webkit?.messageHandlers?.alarm) {
+    // 이미 꺼진 알람이면 반복 중단
+    const stillEnabled = alarms.find(a => a.id === alarm.id && a.enabled);
+    if (!stillEnabled) { dismissAlert(); return; }
+    if (window.webkit?.messageHandlers?.playSound) {
       window.webkit.messageHandlers.playSound.postMessage(null);
     } else if (window.electronAPI) {
-      window.electronAPI.triggerAlert({ label: alarm.label, period, time: display });
       window.electronAPI.playSound();
     } else {
       playWebSound();
@@ -313,12 +321,12 @@ function triggerAlarm(alarm) {
 }
 
 function triggerTaskAlarm(task) {
-  // 오버레이 표시
+  dismissAlert();
+
   alertName.textContent = task.name.replace("\n", " · ");
   alertTimeEl.textContent = "작업 완료! 🎉";
   alertOverlay.classList.add("active");
 
-  // 소리
   if (window.webkit?.messageHandlers?.playSound) {
     window.webkit.messageHandlers.playSound.postMessage(null);
   } else {
@@ -326,20 +334,11 @@ function triggerTaskAlarm(task) {
     sendNotification(task.name.replace("\n", " · "), "", "작업 완료! 🎉");
   }
 
-  // 탭 제목 깜빡임
   let blink = false;
   titleBlinkTimer = setInterval(() => {
     document.title = blink ? `🔴 ${task.name.split("\n")[0]} 완료!` : "마비노기 에린시계";
     blink = !blink;
   }, 800);
-}
-
-function dismissAlert() {
-  activeAlert = null;
-  alertOverlay.classList.remove("active");
-  clearInterval(titleBlinkTimer);
-  clearInterval(repeatTimer);
-  document.title = "마비노기 에린시계";
 }
 
 alertOverlay.addEventListener("click", dismissAlert);
