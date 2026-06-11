@@ -502,6 +502,15 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 let marketCache = [];  // 최신 결과 캐시
 
+async function fetchWithRetry(itemName, maxTry = 3) {
+  for (let i = 0; i < maxTry; i++) {
+    if (i > 0) await sleep(600 * i); // 재시도마다 딜레이 증가
+    const r = await fetchMarketItem(itemName);
+    if (r !== null) return r;
+  }
+  return { error: true }; // 3회 모두 실패
+}
+
 async function loadMarket() {
   const container = document.getElementById("market-list");
   const updatedEl = document.getElementById("market-updated");
@@ -509,12 +518,9 @@ async function loadMarket() {
 
   container.innerHTML = `<div class="market-loading">⏳ 시세 불러오는 중...</div>`;
 
-  // 동시 요청 시 테스트 키 제한 → 200ms 간격으로 순차 호출
   const results = [];
   for (const item of MARKET_ITEMS) {
-    const r = await fetchMarketItem(item.name);
-    // 실패(null)면 한 번 재시도
-    results.push(r ?? await fetchMarketItem(item.name));
+    results.push(await fetchWithRetry(item.name));
     await sleep(400);
   }
 
@@ -522,12 +528,13 @@ async function loadMarket() {
 
   container.innerHTML = MARKET_ITEMS.map((item, i) => {
     const r = results[i];
+    const failed  = r?.error === true;
     const lowStr   = r?.lowestNow  != null ? priceStr(r.lowestNow)   : null;
     const tradeStr = r?.latestTrade != null ? priceStr(r.latestTrade) : null;
     const countStr = r?.totalNow   != null ? `매물 ${r.totalNow.toLocaleString()}개` : "";
 
     let optionStr = "";
-    if (item.showOptions && r?.firstOptions?.length) {
+    if (!failed && item.showOptions && r?.firstOptions?.length) {
       const matched = r.firstOptions
         .filter(o => o.option_type === "사용 효과" &&
                      item.showOptions.some(k => o.option_value?.includes(k)))
@@ -535,18 +542,9 @@ async function loadMarket() {
       if (matched.length) optionStr = matched.join(" · ");
     }
 
-    return `
-    <div class="market-card" data-idx="${i}" style="cursor:pointer">
-      <div class="market-left">
-        <span class="market-icon">${item.icon}</span>
-        <div>
-          <div class="market-name">${item.name}</div>
-          <div class="market-category">${countStr || "매물 없음"}</div>
-          ${optionStr ? `<div class="market-option">${optionStr}</div>` : ""}
-        </div>
-      </div>
-      <div class="market-right">
-        ${lowStr
+    const rightContent = failed
+      ? `<button class="btn-retry-item" data-idx="${i}" style="background:#7c3aed;color:white;border:none;padding:6px 10px;border-radius:8px;font-size:12px;cursor:pointer">🔄 재시도</button>`
+      : `${lowStr
           ? `<div class="market-price">${lowStr}</div>
              <div class="market-history">최근 거래 ${tradeStr ?? "없음"}</div>`
           : `<div class="market-price none">매물 없음</div>
@@ -555,13 +553,35 @@ async function loadMarket() {
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-left:6px">
           <span style="font-size:16px;color:#475569">›</span>
           <button class="btn-market-del" data-idx="${i}" style="background:none;border:none;color:#334155;font-size:14px;cursor:pointer;line-height:1;padding:2px">✕</button>
+        </div>`;
+
+    return `
+    <div class="market-card${failed ? " failed" : ""}" data-idx="${i}" style="cursor:pointer">
+      <div class="market-left">
+        <span class="market-icon">${item.icon}</span>
+        <div>
+          <div class="market-name">${item.name}</div>
+          <div class="market-category">${failed ? "⚠️ 불러오기 실패" : (countStr || "매물 없음")}</div>
+          ${optionStr ? `<div class="market-option">${optionStr}</div>` : ""}
         </div>
       </div>
+      <div class="market-right">${rightContent}</div>
     </div>`;
   }).join("");
 
-  container.querySelectorAll(".market-card").forEach(card => {
+  container.querySelectorAll(".market-card:not(.failed)").forEach(card => {
     card.addEventListener("click", () => openMarketDetail(parseInt(card.dataset.idx)));
+  });
+  container.querySelectorAll(".btn-retry-item").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.idx);
+      btn.textContent = "⏳";
+      btn.disabled = true;
+      const r = await fetchWithRetry(MARKET_ITEMS[idx].name);
+      marketCache[idx] = r;
+      loadMarket(); // 전체 재렌더
+    });
   });
   container.querySelectorAll(".btn-market-del").forEach(btn => {
     btn.addEventListener("click", e => {
