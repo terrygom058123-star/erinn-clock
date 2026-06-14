@@ -458,39 +458,7 @@ async function fetchWithTimeout(url, options, ms = 8000) {
   } catch(e) { clearTimeout(id); throw e; }
 }
 
-async function fetchMarketItem(itemName) {
-  const enc = encodeURIComponent(itemName);
-  const headers = { "x-nxopen-api-key": API_KEY };
-  try {
-    // 매물 검색
-    const listRes = await fetchWithTimeout(
-      `https://open.api.nexon.com/mabinogi/v1/auction/keyword-search?keyword=${enc}`,
-      { headers }
-    );
-    const listData = await listRes.json();
-    await sleep(150);
-
-    // 거래 내역
-    const histRes = await fetchWithTimeout(
-      `https://open.api.nexon.com/mabinogi/v1/auction/history?item_name=${enc}`,
-      { headers }
-    );
-    const histData = await histRes.json();
-
-    const listings = listData.auction_item || [];
-    const history  = histData.auction_history || [];
-
-    const sorted       = [...listings].sort((a, b) => a.auction_price_per_unit - b.auction_price_per_unit);
-    const lowestNow    = sorted.length ? sorted[0].auction_price_per_unit : null;
-    const totalNow     = listings.reduce((s, i) => s + i.item_count, 0);
-    const latestTrade  = history.length ? history[0].auction_price_per_unit : null;
-    const firstOptions = sorted.length ? (sorted[0].item_option || []) : [];
-
-    return { lowestNow, totalNow, latestTrade, listings: listings.length, firstOptions, top10: sorted.slice(0, 10) };
-  } catch(e) {
-    return null;
-  }
-}
+async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function priceStr(n) {
   if (n == null) return null;
@@ -498,90 +466,111 @@ function priceStr(n) {
   return `${n.toLocaleString()}골드`;
 }
 
-async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+// 이름별 마지막 시세 캐시 (localStorage 유지)
+let marketCache = JSON.parse(localStorage.getItem("erinn-market-cache") || "{}");
+function saveMarketCache() { localStorage.setItem("erinn-market-cache", JSON.stringify(marketCache)); }
 
-let marketCache = [];  // 최신 결과 캐시
+// 매물(현재 시세)만 조회 — 거래내역은 상세창에서 별도 조회 (요청 수 절반)
+// 반환: { status: "ok"|"ratelimit"|"error", ... }
+async function fetchListing(itemName) {
+  const enc = encodeURIComponent(itemName);
+  const headers = { "x-nxopen-api-key": API_KEY };
+  try {
+    const res = await fetchWithTimeout(
+      `https://open.api.nexon.com/mabinogi/v1/auction/keyword-search?keyword=${enc}`,
+      { headers }
+    );
+    if (res.status === 429) return { status: "ratelimit" };
+    if (!res.ok)            return { status: "error" };
 
-async function fetchWithRetry(itemName, maxTry = 3) {
-  for (let i = 0; i < maxTry; i++) {
-    if (i > 0) await sleep(600 * i); // 재시도마다 딜레이 증가
-    const r = await fetchMarketItem(itemName);
-    if (r !== null) return r;
+    const data = await res.json();
+    const listings = data.auction_item || [];
+    const sorted = [...listings].sort((a, b) => a.auction_price_per_unit - b.auction_price_per_unit);
+    return {
+      status: "ok",
+      lowestNow: sorted.length ? sorted[0].auction_price_per_unit : null,
+      totalNow:  listings.reduce((s, i) => s + i.item_count, 0),
+      firstOptions: sorted.length ? (sorted[0].item_option || []) : [],
+      top10: sorted.slice(0, 10),
+      updatedAt: Date.now(),
+    };
+  } catch(e) {
+    return { status: "error" };
   }
-  return { error: true }; // 3회 모두 실패
 }
 
+let loadingMarket = false;
+let rateRetryTimer = null;
+
 async function loadMarket() {
+  if (loadingMarket) return;
+  loadingMarket = true;
+  renderMarket("loading");
+
+  let rateLimited = false;
+  for (const item of MARKET_ITEMS) {
+    const r = await fetchListing(item.name);
+    if (r.status === "ratelimit") { rateLimited = true; break; } // 더 두드리지 않고 중단
+    if (r.status === "ok") { marketCache[item.name] = r; }       // error면 기존 캐시 유지
+    await sleep(500);
+  }
+  saveMarketCache();
+  loadingMarket = false;
+  renderMarket(rateLimited ? "ratelimit" : "done");
+
+  // 한도 초과 시 60초 후 자동 재시도
+  clearTimeout(rateRetryTimer);
+  if (rateLimited) rateRetryTimer = setTimeout(loadMarket, 60000);
+}
+
+function renderMarket(state) {
   const container = document.getElementById("market-list");
   const updatedEl = document.getElementById("market-updated");
   if (!container) return;
 
-  container.innerHTML = `<div class="market-loading">⏳ 시세 불러오는 중...</div>`;
-
-  const results = [];
-  for (const item of MARKET_ITEMS) {
-    results.push(await fetchWithRetry(item.name));
-    await sleep(400);
-  }
-
-  marketCache = results;
-
   container.innerHTML = MARKET_ITEMS.map((item, i) => {
-    const r = results[i];
-    const failed  = r?.error === true;
-    const lowStr   = r?.lowestNow  != null ? priceStr(r.lowestNow)   : null;
-    const tradeStr = r?.latestTrade != null ? priceStr(r.latestTrade) : null;
-    const countStr = r?.totalNow   != null ? `매물 ${r.totalNow.toLocaleString()}개` : "";
+    const c = marketCache[item.name];
+    const lowStr   = c?.lowestNow != null ? priceStr(c.lowestNow) : null;
+    const countStr = c?.totalNow  != null ? `매물 ${c.totalNow.toLocaleString()}개` : "";
+    const hasData  = !!c;
 
     let optionStr = "";
-    if (!failed && item.showOptions && r?.firstOptions?.length) {
-      const matched = r.firstOptions
+    if (item.showOptions && c?.firstOptions?.length) {
+      const matched = c.firstOptions
         .filter(o => o.option_type === "사용 효과" &&
                      item.showOptions.some(k => o.option_value?.includes(k)))
         .map(o => o.option_value);
       if (matched.length) optionStr = matched.join(" · ");
     }
 
-    const rightContent = failed
-      ? `<button class="btn-retry-item" data-idx="${i}" style="background:#7c3aed;color:white;border:none;padding:6px 10px;border-radius:8px;font-size:12px;cursor:pointer">🔄 재시도</button>`
-      : `${lowStr
-          ? `<div class="market-price">${lowStr}</div>
-             <div class="market-history">최근 거래 ${tradeStr ?? "없음"}</div>`
-          : `<div class="market-price none">매물 없음</div>
-             <div class="market-history">최근 거래 ${tradeStr ?? "없음"}</div>`
-        }
-        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-left:6px">
-          <span style="font-size:16px;color:#475569">›</span>
-          <button class="btn-market-del" data-idx="${i}" style="background:none;border:none;color:#334155;font-size:14px;cursor:pointer;line-height:1;padding:2px">✕</button>
-        </div>`;
+    const priceBlock = !hasData
+      ? `<div class="market-price none">${state === "loading" ? "불러오는 중…" : "—"}</div>`
+      : lowStr
+        ? `<div class="market-price">${lowStr}</div>`
+        : `<div class="market-price none">매물 없음</div>`;
 
     return `
-    <div class="market-card${failed ? " failed" : ""}" data-idx="${i}" style="cursor:pointer">
+    <div class="market-card" data-idx="${i}" style="cursor:pointer">
       <div class="market-left">
         <span class="market-icon">${item.icon}</span>
         <div>
           <div class="market-name">${item.name}</div>
-          <div class="market-category">${failed ? "⚠️ 불러오기 실패" : (countStr || "매물 없음")}</div>
+          <div class="market-category">${hasData ? (countStr || "매물 없음") : "—"}</div>
           ${optionStr ? `<div class="market-option">${optionStr}</div>` : ""}
         </div>
       </div>
-      <div class="market-right">${rightContent}</div>
+      <div class="market-right">
+        ${priceBlock}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-left:6px">
+          <span style="font-size:16px;color:#475569">›</span>
+          <button class="btn-market-del" data-idx="${i}" style="background:none;border:none;color:#334155;font-size:14px;cursor:pointer;line-height:1;padding:2px">✕</button>
+        </div>
+      </div>
     </div>`;
   }).join("");
 
-  container.querySelectorAll(".market-card:not(.failed)").forEach(card => {
+  container.querySelectorAll(".market-card").forEach(card => {
     card.addEventListener("click", () => openMarketDetail(parseInt(card.dataset.idx)));
-  });
-  container.querySelectorAll(".btn-retry-item").forEach(btn => {
-    btn.addEventListener("click", async e => {
-      e.stopPropagation();
-      const idx = parseInt(btn.dataset.idx);
-      btn.textContent = "⏳";
-      btn.disabled = true;
-      const r = await fetchWithRetry(MARKET_ITEMS[idx].name);
-      marketCache[idx] = r;
-      loadMarket(); // 전체 재렌더
-    });
   });
   container.querySelectorAll(".btn-market-del").forEach(btn => {
     btn.addEventListener("click", e => {
@@ -589,19 +578,24 @@ async function loadMarket() {
       const idx = parseInt(btn.dataset.idx);
       MARKET_ITEMS.splice(idx, 1);
       saveMarketItems();
-      loadMarket();
+      renderMarket("done");
     });
   });
 
-  const now = new Date();
-  updatedEl.textContent = `${now.toLocaleTimeString("ko-KR")} 기준`;
+  if (state === "loading") {
+    updatedEl.textContent = "⏳ 불러오는 중...";
+  } else if (state === "ratelimit") {
+    updatedEl.innerHTML = `<span style="color:#f59e0b">⚠️ 넥슨 API 요청 한도 초과 · 60초 후 자동 재시도</span>`;
+  } else {
+    updatedEl.textContent = `${new Date().toLocaleTimeString("ko-KR")} 기준`;
+  }
 }
 
 // ─── 경매장 상세 모달 ─────────────────────────────────────
-function openMarketDetail(idx) {
+async function openMarketDetail(idx) {
   const item = MARKET_ITEMS[idx];
-  const r    = marketCache[idx];
-  const top10 = r?.top10 || [];
+  const c    = marketCache[item.name];
+  const top10 = c?.top10 || [];
 
   document.getElementById("mdetail-title").textContent = `${item.icon} ${item.name}`;
   document.getElementById("mdetail-count").textContent =
