@@ -500,8 +500,8 @@ async function fetchListing(itemName) {
 }
 
 let loadingMarket = false;
-let rateRetryTimer = null;
 
+// 새로고침 버튼을 누를 때만 실제 API 조회 (자동 조회 없음 → 한도 보호)
 async function loadMarket() {
   if (loadingMarket) return;
   loadingMarket = true;
@@ -517,10 +517,6 @@ async function loadMarket() {
   saveMarketCache();
   loadingMarket = false;
   renderMarket(rateLimited ? "ratelimit" : "done");
-
-  // 한도 초과 시 60초 후 자동 재시도
-  clearTimeout(rateRetryTimer);
-  if (rateLimited) rateRetryTimer = setTimeout(loadMarket, 60000);
 }
 
 function renderMarket(state) {
@@ -585,7 +581,12 @@ function renderMarket(state) {
   if (state === "loading") {
     updatedEl.textContent = "⏳ 불러오는 중...";
   } else if (state === "ratelimit") {
-    updatedEl.innerHTML = `<span style="color:#f59e0b">⚠️ 넥슨 API 요청 한도 초과 · 60초 후 자동 재시도</span>`;
+    updatedEl.innerHTML = `<span style="color:#f59e0b">⚠️ 넥슨 API 요청 한도 초과 · 잠시 후 🔄 다시 눌러주세요</span>`;
+  } else if (state === "cached") {
+    const anyData = MARKET_ITEMS.some(it => marketCache[it.name]);
+    updatedEl.innerHTML = anyData
+      ? `<span style="color:#64748b">저장된 시세 · 🔄 눌러 최신 가격 확인</span>`
+      : `<span style="color:#64748b">🔄 새로고침을 눌러 시세를 불러오세요</span>`;
   } else {
     updatedEl.textContent = `${new Date().toLocaleTimeString("ko-KR")} 기준`;
   }
@@ -640,8 +641,8 @@ document.getElementById("market-detail-modal").addEventListener("click", e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.remove("open");
 });
 
-loadMarket();
-setInterval(loadMarket, 180000);
+// 시작 시엔 저장된 시세만 표시 (API 조회 안 함). 새로고침 버튼을 눌러야 갱신
+renderMarket("cached");
 document.getElementById("btn-refresh-market").addEventListener("click", loadMarket);
 
 // ─── 경매장 검색 추가 ─────────────────────────────────────
