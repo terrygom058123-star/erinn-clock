@@ -8,16 +8,46 @@ body {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  display: flex;
+  flex-direction: column;
 }
 
 #app {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
   padding: 16px 16px 20px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* 하단 탭바 */
+.tab-bar {
+  flex-shrink: 0;
+  display: flex;
+  background: #0b1120;
+  border-top: 1px solid #1e293b;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #475569;
+  font-size: 11px;
+  padding: 8px 0 7px;
+  transition: color 0.15s;
+}
+.tab-btn .tab-ico { font-size: 22px; line-height: 1; filter: grayscale(0.6) opacity(0.6); transition: filter 0.15s; }
+.tab-btn.active { color: #818cf8; }
+.tab-btn.active .tab-ico { filter: none; }
+.tab-panel { display: flex; flex-direction: column; }
 
 /* 상단 타이틀바 여백 (hiddenInset) */
 .titlebar-spacer { height: 20px; flex-shrink: 0; }

@@ -228,21 +228,52 @@ function renderHomework() {
   document.getElementById("hw-daily-count").textContent  = `${dDone}/${HW_DAILY.length}`;
   document.getElementById("hw-weekly-count").textContent = `${wDone}/${HW_WEEKLY.length}`;
 
-  // 다음 리셋까지 남은 시간
-  const note = document.getElementById("hw-reset-note");
-  if (note) {
+  // 매일 리셋까지 남은 시간 (오전 6시)
+  const dNote = document.getElementById("hw-daily-reset");
+  if (dNote) {
     const now = new Date();
     const next6 = new Date(now);
     next6.setHours(6, 0, 0, 0);
     if (now.getHours() >= 6) next6.setDate(next6.getDate() + 1);
     const hrs = Math.floor((next6 - now) / 3600000);
     const mins = Math.floor(((next6 - now) % 3600000) / 60000);
-    note.textContent = `리셋까지 ${hrs}시간 ${mins}분`;
+    dNote.textContent = `리셋까지 ${hrs}시간 ${mins}분`;
+  }
+
+  // 주간 리셋까지 남은 시간 (월요일 오전 6시)
+  const wNote = document.getElementById("hw-weekly-reset");
+  if (wNote) {
+    const now = new Date();
+    const nextMon = new Date(now);
+    nextMon.setHours(6, 0, 0, 0);
+    // 다음 월요일 오전 6시까지
+    let addDays = (8 - now.getDay()) % 7; // 월요일(1)까지 남은 일수
+    if (addDays === 0 && now.getHours() >= 6) addDays = 7; // 오늘이 월요일이고 6시 지났으면 다음주
+    if (now.getDay() === 1 && now.getHours() < 6) addDays = 0; // 월요일 6시 전이면 오늘
+    nextMon.setDate(nextMon.getDate() + addDays);
+    const diff = nextMon - now;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    wNote.textContent = d > 0 ? `리셋까지 ${d}일 ${h}시간` : `리셋까지 ${h}시간`;
   }
 }
 renderHomework();
 // 1분마다 리셋 시점 체크
 setInterval(renderHomework, 60000);
+
+// ─── 탭 전환 ──────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll(".tab-panel").forEach(p => {
+    p.style.display = (p.id === "tab-" + name) ? "flex" : "none";
+  });
+  document.querySelectorAll(".tab-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === name);
+  });
+  document.getElementById("app").scrollTop = 0;
+}
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => showTab(btn.dataset.tab));
+});
 
 // ─── 오디오 (아이폰 PWA 대응) ──────────────────────────────
 let audioCtx = null;

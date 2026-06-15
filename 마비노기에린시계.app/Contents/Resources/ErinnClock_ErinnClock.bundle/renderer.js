@@ -119,6 +119,131 @@ function renderTasks() {
 }
 renderTasks();
 
+// ─── 마비노기 숙제 (매일 6시 / 주간 월요일 6시 리셋) ─────────
+const HW_DAILY = [
+  "블루밍",
+  "베테랑/빛구/로드(크리스탈)",
+  "탐험대 보내기",
+  "리플레이",
+  "탈농",
+];
+const HW_WEEKLY = [
+  { name: "네아르", target: 10 },
+  { name: "크롬",   target: 10 },
+  { name: "글매",   target: 3  },
+  { name: "브리",   target: 7  },
+];
+
+// 마비노기 리셋 기준 키 (오전 6시 경계, 주간은 월요일) — 로컬(한국) 시간 기준
+function localKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function hwPeriodKeys() {
+  const shifted = new Date(Date.now() - 6 * 3600 * 1000); // 오전 6시 경계
+  const dayKey = localKey(shifted);
+  const d = new Date(shifted);
+  const dow = (d.getDay() + 6) % 7; // 월=0
+  d.setDate(d.getDate() - dow);
+  const weekKey = localKey(d);
+  return { dayKey, weekKey };
+}
+
+let homework = JSON.parse(localStorage.getItem("erinn-homework") || "{}");
+function saveHomework() { localStorage.setItem("erinn-homework", JSON.stringify(homework)); }
+
+function syncHomeworkPeriod() {
+  const { dayKey, weekKey } = hwPeriodKeys();
+  if (homework.dayKey !== dayKey) { homework.dayKey = dayKey; homework.daily = {}; }
+  if (homework.weekKey !== weekKey) { homework.weekKey = weekKey; homework.weekly = {}; }
+  if (!homework.daily)  homework.daily = {};
+  if (!homework.weekly) homework.weekly = {};
+  saveHomework();
+}
+
+function renderHomework() {
+  syncHomeworkPeriod();
+
+  const dailyEl  = document.getElementById("hw-daily");
+  const weeklyEl = document.getElementById("hw-weekly");
+  if (!dailyEl) return;
+
+  // 매일 할일 (체크박스)
+  dailyEl.innerHTML = HW_DAILY.map((name, i) => {
+    const done = !!homework.daily[i];
+    return `
+    <div class="hw-item ${done ? "done" : ""}" data-type="daily" data-idx="${i}">
+      <div class="hw-check">${done ? "✓" : ""}</div>
+      <div class="hw-name">${name}</div>
+    </div>`;
+  }).join("");
+
+  // 주간 할일 (카운터)
+  weeklyEl.innerHTML = HW_WEEKLY.map((item, i) => {
+    const cur  = homework.weekly[i] || 0;
+    const done = cur >= item.target;
+    return `
+    <div class="hw-item ${done ? "done" : ""}" data-idx="${i}">
+      <div class="hw-check">${done ? "✓" : ""}</div>
+      <div class="hw-name">${item.name}</div>
+      <div class="hw-counter-right">
+        <button class="hw-cnt-btn hw-minus" data-idx="${i}">−</button>
+        <div class="hw-cnt-val">${cur} / ${item.target}릴</div>
+        <button class="hw-cnt-btn hw-plus" data-idx="${i}">+</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  // 매일 체크 토글
+  dailyEl.querySelectorAll(".hw-item").forEach(el => {
+    el.addEventListener("click", () => {
+      const idx = el.dataset.idx;
+      homework.daily[idx] = !homework.daily[idx];
+      saveHomework(); renderHomework();
+    });
+  });
+  // 주간 카운터 +/-
+  weeklyEl.querySelectorAll(".hw-plus").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const i = btn.dataset.idx;
+      homework.weekly[i] = Math.min(HW_WEEKLY[i].target, (homework.weekly[i] || 0) + 1);
+      saveHomework(); renderHomework();
+    });
+  });
+  weeklyEl.querySelectorAll(".hw-minus").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const i = btn.dataset.idx;
+      homework.weekly[i] = Math.max(0, (homework.weekly[i] || 0) - 1);
+      saveHomework(); renderHomework();
+    });
+  });
+
+  // 진행 카운트 표시
+  const dDone = HW_DAILY.filter((_, i) => homework.daily[i]).length;
+  const wDone = HW_WEEKLY.filter((it, i) => (homework.weekly[i] || 0) >= it.target).length;
+  document.getElementById("hw-daily-count").textContent  = `${dDone}/${HW_DAILY.length}`;
+  document.getElementById("hw-weekly-count").textContent = `${wDone}/${HW_WEEKLY.length}`;
+
+  // 다음 리셋까지 남은 시간
+  const note = document.getElementById("hw-reset-note");
+  if (note) {
+    const now = new Date();
+    const next6 = new Date(now);
+    next6.setHours(6, 0, 0, 0);
+    if (now.getHours() >= 6) next6.setDate(next6.getDate() + 1);
+    const hrs = Math.floor((next6 - now) / 3600000);
+    const mins = Math.floor(((next6 - now) % 3600000) / 60000);
+    note.textContent = `리셋까지 ${hrs}시간 ${mins}분`;
+  }
+}
+renderHomework();
+// 1분마다 리셋 시점 체크
+setInterval(renderHomework, 60000);
+
 // ─── 오디오 (아이폰 PWA 대응) ──────────────────────────────
 let audioCtx = null;
 

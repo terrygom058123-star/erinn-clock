@@ -40,72 +40,94 @@
     <button class="btn-small" id="btn-load-defaults" style="width:100%;margin-top:6px">🔔 굵은 실 알람 18개 불러오기</button>
   </div>
 
-  <!-- 에린 시계 카드 -->
-  <div class="clock-card" id="clock-card">
-    <div class="clock-label" id="clock-label">에린 시간 · 낮</div>
-    <div class="clock-icon" id="clock-icon">☀️</div>
-    <div class="clock-time">
-      <span class="clock-period" id="clock-period">오후</span>
-      <span class="clock-digits" id="clock-digits">12:00</span>
-    </div>
-    <div class="clock-seconds" id="clock-seconds">00초</div>
-    <div class="progress-wrap">
-      <div class="progress-meta">
-        <span>자정</span>
-        <span id="progress-pct">0% 진행</span>
-        <span>자정</span>
+  <!-- ═══ 탭: 홈 ═══ -->
+  <div class="tab-panel" id="tab-home">
+    <!-- 에린 시계 카드 -->
+    <div class="clock-card" id="clock-card">
+      <div class="clock-label" id="clock-label">에린 시간 · 낮</div>
+      <div class="clock-icon" id="clock-icon">☀️</div>
+      <div class="clock-time">
+        <span class="clock-period" id="clock-period">오후</span>
+        <span class="clock-digits" id="clock-digits">12:00</span>
       </div>
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="progress-fill"></div>
-      </div>
-      <div class="progress-ticks">
-        <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+      <div class="clock-seconds" id="clock-seconds">00초</div>
+      <div class="progress-wrap">
+        <div class="progress-meta">
+          <span>자정</span>
+          <span id="progress-pct">0% 진행</span>
+          <span>자정</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-ticks">
+          <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- 현실 시간 -->
-  <div class="real-time" id="real-time">현실 시간 <span>--:--:--</span></div>
+    <!-- 현실 시간 -->
+    <div class="real-time" id="real-time">현실 시간 <span>--:--:--</span></div>
 
-  <!-- 마비노기 숙제 -->
-  <div class="alarm-header">
-    <h2>📋 마비노기 숙제</h2>
-    <span id="hw-reset-note" style="font-size:11px;color:#475569"></span>
-  </div>
-
-  <div class="hw-group-label">매일 할일 <span id="hw-daily-count"></span></div>
-  <div id="hw-daily"></div>
-
-  <div class="hw-group-label" style="margin-top:12px">주간 할일 <span id="hw-weekly-count"></span></div>
-  <div id="hw-weekly"></div>
-
-  <!-- 알람 목록 -->
-  <div class="alarm-header">
-    <h2>알람 목록</h2>
-    <button class="btn-add" id="btn-add">+ 추가</button>
-  </div>
-  <div id="alarm-list">
-    <div class="alarm-empty">알람이 없어요.<br><span style="color:#475569">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>
-  </div>
-
-  <!-- 작업 타이머 -->
-  <div class="alarm-header" style="margin-top:8px">
-    <h2>⚒️ 작업 타이머</h2>
-  </div>
-  <div id="task-timers"></div>
-
-  <!-- 경매장 시세 -->
-  <div class="alarm-header" style="margin-top:8px">
-    <h2>💰 경매장 시세</h2>
-    <div style="display:flex;gap:6px">
-      <button class="btn-add" id="btn-market-search" style="font-size:12px;padding:6px 12px">+ 추가</button>
-      <button class="btn-add" id="btn-refresh-market" style="font-size:12px;padding:6px 12px;background:#334155">🔄</button>
+    <!-- 알람 목록 -->
+    <div class="alarm-header">
+      <h2>알람 목록</h2>
+      <button class="btn-add" id="btn-add">+ 추가</button>
     </div>
-  </div>
-  <div id="market-list"></div>
-  <div id="market-updated" style="text-align:center;font-size:11px;color:#334155;margin-top:4px;margin-bottom:8px"></div>
+    <div id="alarm-list">
+      <div class="alarm-empty">알람이 없어요.<br><span style="color:#475569">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>
+    </div>
 
-  <div class="footer-note">알람 발동 시 화면 빨간 오버레이 + 맥OS 시스템 경고창이 뜹니다</div>
+    <!-- 작업 타이머 -->
+    <div class="alarm-header" style="margin-top:8px">
+      <h2>⚒️ 작업 타이머</h2>
+    </div>
+    <div id="task-timers"></div>
+
+    <!-- 경매장 시세 -->
+    <div class="alarm-header" style="margin-top:8px">
+      <h2>💰 경매장 시세</h2>
+      <div style="display:flex;gap:6px">
+        <button class="btn-add" id="btn-market-search" style="font-size:12px;padding:6px 12px">+ 추가</button>
+        <button class="btn-add" id="btn-refresh-market" style="font-size:12px;padding:6px 12px;background:#334155">🔄</button>
+      </div>
+    </div>
+    <div id="market-list"></div>
+    <div id="market-updated" style="text-align:center;font-size:11px;color:#334155;margin-top:4px;margin-bottom:8px"></div>
+  </div>
+
+  <!-- ═══ 탭: 매일 할일 ═══ -->
+  <div class="tab-panel" id="tab-daily" style="display:none">
+    <div class="alarm-header">
+      <h2>☀️ 매일 할일 <span id="hw-daily-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
+      <span id="hw-daily-reset" style="font-size:11px;color:#475569"></span>
+    </div>
+    <div id="hw-daily"></div>
+    <div class="footer-note" style="margin-top:20px">매일 오전 6시에 자동으로 초기화됩니다</div>
+  </div>
+
+  <!-- ═══ 탭: 주간 할일 ═══ -->
+  <div class="tab-panel" id="tab-weekly" style="display:none">
+    <div class="alarm-header">
+      <h2>📅 주간 할일 <span id="hw-weekly-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
+      <span id="hw-weekly-reset" style="font-size:11px;color:#475569"></span>
+    </div>
+    <div id="hw-weekly"></div>
+    <div class="footer-note" style="margin-top:20px">매주 월요일 오전 6시에 자동으로 초기화됩니다</div>
+  </div>
+</div>
+
+<!-- 하단 탭바 -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="home">
+    <span class="tab-ico">🏠</span><span>홈</span>
+  </button>
+  <button class="tab-btn" data-tab="daily">
+    <span class="tab-ico">☀️</span><span>매일</span>
+  </button>
+  <button class="tab-btn" data-tab="weekly">
+    <span class="tab-ico">📅</span><span>주간</span>
+  </button>
 </div>
 
 <!-- 알람 추가 모달 -->
