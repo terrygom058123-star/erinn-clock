@@ -1,0 +1,104 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "ErinnClock-arm64-apple-macosx26.0-debug.exe": ["<ErinnClock-arm64-apple-macosx26.0-debug.exe>"]
+  "ErinnClock-arm64-apple-macosx26.0-debug.module": ["<ErinnClock-arm64-apple-macosx26.0-debug.module>"]
+  "PackageStructure": ["<PackageStructure>"]
+  "main": ["<ErinnClock-arm64-apple-macosx26.0-debug.exe>","<ErinnClock-arm64-apple-macosx26.0-debug.module>"]
+  "test": ["<ErinnClock-arm64-apple-macosx26.0-debug.exe>","<ErinnClock-arm64-apple-macosx26.0-debug.module>"]
+default: "main"
+nodes:
+  "/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock":
+    is-mutated: true
+commands:
+  "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock-entitlement.plist"]
+    description: "Write auxiliary file /Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock-entitlement.plist"
+
+  "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/AppDelegate.swift","/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/main.swift","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/DerivedSources/resource_bundle_accessor.swift"]
+    outputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/sources"]
+    description: "Write auxiliary file /Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/sources"
+
+  "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/AppDelegate.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/main.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/resource_bundle_accessor.swift.o"]
+    outputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.product/Objects.LinkFileList"
+
+  "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle/index.html":
+    tool: copy-tool
+    inputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/index.html"]
+    outputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle/index.html"]
+    description: "Copying /Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/index.html"
+
+  "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle/renderer.js":
+    tool: copy-tool
+    inputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/renderer.js"]
+    outputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle/renderer.js"]
+    description: "Copying /Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/renderer.js"
+
+  "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle/style.css":
+    tool: copy-tool
+    inputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/style.css"]
+    outputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle/style.css"]
+    description: "Copying /Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/style.css"
+
+  "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Library/Developer/CommandLineTools/usr/bin/swiftc"]
+    outputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+
+  "<ErinnClock-arm64-apple-macosx26.0-debug.exe>":
+    tool: phony
+    inputs: ["<ErinnClock-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    outputs: ["<ErinnClock-arm64-apple-macosx26.0-debug.exe>"]
+
+  "<ErinnClock-arm64-apple-macosx26.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/AppDelegate.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/main.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/resource_bundle_accessor.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/Modules/ErinnClock.swiftmodule"]
+    outputs: ["<ErinnClock-arm64-apple-macosx26.0-debug.module>"]
+
+  "C.ErinnClock-arm64-apple-macosx26.0-debug.exe":
+    tool: shell
+    inputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/AppDelegate.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/main.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/resource_bundle_accessor.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.product/Objects.LinkFileList"]
+    outputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/ErinnClock"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug","-o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock","-module-name","ErinnClock","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_ErinnClock_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx13.0","-Xlinker","-add_ast_path","-Xlinker","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/Modules/ErinnClock.swiftmodule","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g"]
+
+  "C.ErinnClock-arm64-apple-macosx26.0-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock-entitlement.plist"]
+    outputs: ["<ErinnClock-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/ErinnClock"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock-entitlement.plist","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock"]
+
+  "C.ErinnClock-arm64-apple-macosx26.0-debug.module":
+    tool: shell
+    inputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/AppDelegate.swift","/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/main.swift","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/DerivedSources/resource_bundle_accessor.swift","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","<ErinnClock-arm64-apple-macosx26.0-debug.module-resources>","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/sources"]
+    outputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/AppDelegate.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/main.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/resource_bundle_accessor.swift.o","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/Modules/ErinnClock.swiftmodule"]
+    description: "Compiling Swift Module 'ErinnClock' (3 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","ErinnClock","-emit-dependencies","-emit-module","-emit-module-path","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/Modules/ErinnClock.swiftmodule","-output-file-map","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/output-file-map.json","-incremental","-c","@/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/sources","-I","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx13.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_AVAILABLE","-module-cache-path","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","ErinnClock_main","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","mabinogi_swift"]
+
+  "ErinnClock-arm64-apple-macosx26.0-debug.module-resources":
+    tool: phony
+    inputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle/index.html","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle/renderer.js","/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle/style.css"]
+    outputs: ["<ErinnClock-arm64-apple-macosx26.0-debug.module-resources>"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/","/Users/minyoungmoon/프로젝트/mabinogi-swift/Package.swift","/Users/minyoungmoon/프로젝트/mabinogi-swift/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

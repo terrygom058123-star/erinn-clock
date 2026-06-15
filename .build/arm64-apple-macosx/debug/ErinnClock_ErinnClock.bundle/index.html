@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>마비노기 에린시계</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+  <div class="titlebar-spacer"></div>
+
+  <!-- 헤더 -->
+  <div class="header">
+    <h1>마비노기 에린시계</h1>
+    <button class="btn-icon" id="btn-settings" title="설정">⚙️</button>
+  </div>
+
+  <!-- 설정 패널 -->
+  <div class="settings-panel" id="settings-panel">
+    <h2>설정</h2>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">에린 시간 보정</div>
+        <div class="setting-sub">인게임 시간과 맞지 않으면 조정하세요</div>
+      </div>
+    </div>
+    <div class="calibrate-row">
+      <select id="calib-hour"></select>
+      <select id="calib-min"></select>
+      <button class="btn-small" id="btn-calibrate">맞추기</button>
+    </div>
+    <div class="offset-note" id="offset-note" style="display:none"></div>
+    <div class="setting-row" style="margin-top:12px">
+      <div>
+        <div class="setting-label">굵은 실 알람</div>
+        <div class="setting-sub">에린 오후 3시부터 6시간 40분마다 (현실 10분)</div>
+      </div>
+    </div>
+    <button class="btn-small" id="btn-load-defaults" style="width:100%;margin-top:6px">🔔 굵은 실 알람 18개 불러오기</button>
+  </div>
+
+  <!-- 에린 시계 카드 -->
+  <div class="clock-card" id="clock-card">
+    <div class="clock-label" id="clock-label">에린 시간 · 낮</div>
+    <div class="clock-icon" id="clock-icon">☀️</div>
+    <div class="clock-time">
+      <span class="clock-period" id="clock-period">오후</span>
+      <span class="clock-digits" id="clock-digits">12:00</span>
+    </div>
+    <div class="clock-seconds" id="clock-seconds">00초</div>
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span>자정</span>
+        <span id="progress-pct">0% 진행</span>
+        <span>자정</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-ticks">
+        <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 현실 시간 -->
+  <div class="real-time" id="real-time">현실 시간 <span>--:--:--</span></div>
+
+  <!-- 알람 목록 -->
+  <div class="alarm-header">
+    <h2>알람 목록</h2>
+    <button class="btn-add" id="btn-add">+ 추가</button>
+  </div>
+  <div id="alarm-list">
+    <div class="alarm-empty">알람이 없어요.<br><span style="color:#475569">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>
+  </div>
+
+  <!-- 작업 타이머 -->
+  <div class="alarm-header" style="margin-top:8px">
+    <h2>⚒️ 작업 타이머</h2>
+  </div>
+  <div id="task-timers"></div>
+
+  <!-- 경매장 시세 -->
+  <div class="alarm-header" style="margin-top:8px">
+    <h2>💰 경매장 시세</h2>
+    <div style="display:flex;gap:6px">
+      <button class="btn-add" id="btn-market-search" style="font-size:12px;padding:6px 12px">+ 추가</button>
+      <button class="btn-add" id="btn-refresh-market" style="font-size:12px;padding:6px 12px;background:#334155">🔄</button>
+    </div>
+  </div>
+  <div id="market-list"></div>
+  <div id="market-updated" style="text-align:center;font-size:11px;color:#334155;margin-top:4px;margin-bottom:8px"></div>
+
+  <div class="footer-note">알람 발동 시 화면 빨간 오버레이 + 맥OS 시스템 경고창이 뜹니다</div>
+</div>
+
+<!-- 알람 추가 모달 -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>에린 알람 추가</h3>
+    <div class="form-group">
+      <label>알람 이름 (선택)</label>
+      <input type="text" id="new-label" placeholder="예: 야생마 사냥" />
+    </div>
+    <div class="form-group">
+      <label>에린 시간</label>
+      <div class="time-row">
+        <select id="new-hour"></select>
+        <span class="time-sep">:</span>
+        <select id="new-min"></select>
+      </div>
+      <div class="form-hint">에린 1시간 = 현실 90초 / 에린 1일 = 현실 36분</div>
+    </div>
+    <button class="btn-confirm" id="btn-confirm">알람 추가</button>
+  </div>
+</div>
+
+<!-- 경매장 검색 모달 -->
+<div class="modal-backdrop" id="market-search-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3>경매장 검색</h3>
+      <button id="msearch-close" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input type="text" id="market-search-input" placeholder="아이템 이름 입력" style="flex:1;background:#334155;color:white;border:none;border-radius:12px;padding:12px 14px;font-size:14px;outline:none"/>
+      <button id="btn-msearch-go" class="btn-confirm" style="width:auto;margin:0;padding:12px 18px;border-radius:12px">검색</button>
+    </div>
+    <div id="msearch-results" style="max-height:320px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- 경매장 상세 모달 -->
+<div class="modal-backdrop" id="market-detail-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <h3 id="mdetail-title" style="font-size:16px"></h3>
+      <button id="mdetail-close" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div id="mdetail-count" style="font-size:12px;color:#64748b;margin-bottom:14px"></div>
+    <div id="mdetail-list"></div>
+  </div>
+</div>
+
+<!-- 알람 발동 오버레이 -->
+<div class="alert-overlay" id="alert-overlay">
+  <div class="alert-bell">⏰</div>
+  <div class="alert-name" id="alert-name">알람</div>
+  <div class="alert-time" id="alert-time"></div>
+  <button class="alert-dismiss" id="alert-dismiss">화면을 눌러 끄기</button>
+</div>
+
+<script src="renderer.js"></script>
+</body>
+</html>
