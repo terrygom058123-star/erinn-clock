@@ -275,20 +275,80 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => showTab(btn.dataset.tab));
 });
 
-// ─── 미니 시계 토글 (맥 앱 전용) ───────────────────────────
+// ─── 미니 시계 토글 ────────────────────────────────────────
+// 맥 앱: 네이티브 항상-위 창 / 크롬·엣지 웹: Document Picture-in-Picture
 const miniBtn = document.getElementById("btn-mini-clock");
 let miniClockOn = false;
+let pipWindow = null;
+let pipEls = null;  // { period, time, icon }
+
+function setMiniBtn(on) {
+  miniClockOn = on;
+  if (!miniBtn) return;
+  miniBtn.classList.toggle("on", on);
+  miniBtn.textContent = on ? "🕐 미니 시계 끄기" : "🕐 미니 시계 항상 띄우기";
+}
+
+async function toggleWebPiP() {
+  // 이미 열려 있으면 닫기
+  if (pipWindow) { pipWindow.close(); return; }
+
+  const pip = await documentPictureInPicture.requestWindow({ width: 200, height: 110 });
+  pipWindow = pip;
+
+  const style = pip.document.createElement("style");
+  style.textContent = `
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      background:#0b1120; color:#fff; font-family:-apple-system,BlinkMacSystemFont,sans-serif; user-select:none; }
+    .p { font-size:14px; color:#94a3b8; margin-bottom:2px; }
+    .t { font-size:42px; font-weight:200; font-variant-numeric:tabular-nums; line-height:1; letter-spacing:-1px; }
+    .ic { font-size:18px; margin-top:4px; }
+  `;
+  pip.document.head.appendChild(style);
+
+  const wrap = pip.document.createElement("div");
+  const period = pip.document.createElement("div"); period.className = "p"; period.textContent = "오전";
+  const time   = pip.document.createElement("div"); time.className = "t"; time.textContent = "--:--";
+  const icon   = pip.document.createElement("div"); icon.className = "ic"; icon.textContent = "🕐";
+  wrap.appendChild(period); wrap.appendChild(time); wrap.appendChild(icon);
+  pip.document.body.appendChild(wrap);
+
+  pipEls = { period, time, icon };
+  updatePiP();
+
+  pip.addEventListener("pagehide", () => { pipWindow = null; pipEls = null; setMiniBtn(false); });
+  setMiniBtn(true);
+}
+
+function updatePiP() {
+  if (!pipWindow || !pipEls) return;
+  const et = getErinnTime(offsetSec);
+  const { period, display } = formatErrin(et.hours, et.minutes);
+  const theme = getTheme(et.hours, et.minutes);
+  pipEls.period.textContent = period;
+  pipEls.time.textContent = display;
+  pipEls.icon.textContent = theme.icon;
+  pipWindow.document.body.style.background = `linear-gradient(135deg, ${theme.from}, ${theme.to})`;
+}
+
 if (miniBtn) {
-  if (!window.webkit?.messageHandlers?.toggleMiniClock) {
-    // 웹/아이폰에서는 불가
-    miniBtn.style.display = "none";
-  } else {
+  if (window.webkit?.messageHandlers?.toggleMiniClock) {
+    // 맥 네이티브 앱
     miniBtn.addEventListener("click", () => {
       window.webkit.messageHandlers.toggleMiniClock.postMessage(null);
-      miniClockOn = !miniClockOn;
-      miniBtn.classList.toggle("on", miniClockOn);
-      miniBtn.textContent = miniClockOn ? "🕐 미니 시계 끄기" : "🕐 미니 시계 항상 띄우기";
+      setMiniBtn(!miniClockOn);
     });
+  } else if ("documentPictureInPicture" in window) {
+    // 크롬·엣지 등 데스크톱 브라우저
+    miniBtn.addEventListener("click", () => {
+      toggleWebPiP().catch(() => alert("미니 시계를 열 수 없습니다. 한 번 더 눌러보세요."));
+    });
+  } else {
+    // 아이폰 사파리 등 미지원
+    miniBtn.textContent = "🕐 미니 시계 (크롬·엣지·맥 앱 지원)";
+    miniBtn.addEventListener("click", () =>
+      alert("미니 시계는 PC의 크롬·엣지 브라우저 또는 맥 앱에서 사용할 수 있어요.\n(아이폰 사파리는 지원하지 않습니다)"));
   }
 }
 
@@ -435,6 +495,9 @@ function tick() {
 
   const now = new Date();
   realTimeEl.innerHTML = `현실 시간 <span>${now.toLocaleTimeString("ko-KR")}</span>`;
+
+  // 웹 미니 시계(PiP) 갱신
+  if (typeof updatePiP === "function") updatePiP();
 
   const ts = Date.now();
   if (NATIVE) {
