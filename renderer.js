@@ -63,7 +63,7 @@ const TASKS = [
 ];
 
 let taskState = JSON.parse(localStorage.getItem("erinn-tasks") || "{}");
-function saveTaskState() { localStorage.setItem("erinn-tasks", JSON.stringify(taskState)); }
+function saveTaskState() { localStorage.setItem("erinn-tasks", JSON.stringify(taskState)); if (typeof syncToNative === "function") syncToNative(); }
 
 function getRemaining(id) {
   const t = taskState[id];
@@ -275,6 +275,23 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => showTab(btn.dataset.tab));
 });
 
+// ─── 미니 시계 토글 (맥 앱 전용) ───────────────────────────
+const miniBtn = document.getElementById("btn-mini-clock");
+let miniClockOn = false;
+if (miniBtn) {
+  if (!window.webkit?.messageHandlers?.toggleMiniClock) {
+    // 웹/아이폰에서는 불가
+    miniBtn.style.display = "none";
+  } else {
+    miniBtn.addEventListener("click", () => {
+      window.webkit.messageHandlers.toggleMiniClock.postMessage(null);
+      miniClockOn = !miniClockOn;
+      miniBtn.classList.toggle("on", miniClockOn);
+      miniBtn.textContent = miniClockOn ? "🕐 미니 시계 끄기" : "🕐 미니 시계 항상 띄우기";
+    });
+  }
+}
+
 // ─── 오디오 (아이폰 PWA 대응) ──────────────────────────────
 let audioCtx = null;
 
@@ -343,7 +360,28 @@ let titleBlinkTimer = null;
 let repeatTimer = null;
 const lastTriggered = {};
 
-function saveAlarms() { localStorage.setItem("erinn-alarms", JSON.stringify(alarms)); }
+function saveAlarms() { localStorage.setItem("erinn-alarms", JSON.stringify(alarms)); syncToNative(); }
+
+// ─── 네이티브(맥 앱) 브리지 ───────────────────────────────
+// 맥 앱에서는 Swift가 백그라운드에서 알람을 감시하므로(창 가려도 울림)
+// JS는 알람/작업 목록만 Swift로 넘긴다.
+const NATIVE = !!window.webkit?.messageHandlers?.sync;
+function syncToNative() {
+  if (!NATIVE) return;
+  const enabledAlarms = (alarms || [])
+    .filter(a => a.enabled)
+    .map(a => ({ id: a.id, label: a.label, h: a.h, m: a.m }));
+  const runningTasks = (typeof TASKS !== "undefined" ? TASKS : [])
+    .filter(t => taskState[t.id])
+    .map(t => ({
+      id: t.id,
+      label: t.name.replace("\n", " "),
+      endAt: taskState[t.id].startedAt + taskState[t.id].duration * 1000,
+    }));
+  window.webkit.messageHandlers.sync.postMessage({
+    offsetSec, alarms: enabledAlarms, tasks: runningTasks,
+  });
+}
 
 // ─── DOM 참조 ─────────────────────────────────────────────
 const clockCard    = document.getElementById("clock-card");
@@ -398,27 +436,32 @@ function tick() {
   const now = new Date();
   realTimeEl.innerHTML = `현실 시간 <span>${now.toLocaleTimeString("ko-KR")}</span>`;
 
-  // 알람 체크
   const ts = Date.now();
-  alarms.forEach(alarm => {
-    if (!alarm.enabled) return;
-    if (et.hours !== alarm.h || et.minutes !== alarm.m) return;
-    if (ts - (lastTriggered[alarm.id] || 0) < 90000) return;
-    lastTriggered[alarm.id] = ts;
-    triggerAlarm(alarm);
-  });
-
-  // 작업 타이머 완료 체크
-  TASKS.forEach(task => {
-    const t = taskState[task.id];
-    if (!t || t.notified) return;
-    const rem = getRemaining(task.id);
-    if (rem <= 0) {
-      t.notified = true;
-      saveTaskState();
-      triggerTaskAlarm(task);
-    }
-  });
+  if (NATIVE) {
+    // 맥 앱: Swift가 알람/작업을 백그라운드 감시. JS는 UI 상태(완료 표시)만 갱신.
+    TASKS.forEach(task => {
+      const t = taskState[task.id];
+      if (t && !t.notified && getRemaining(task.id) <= 0) { t.notified = true; saveTaskState(); }
+    });
+  } else {
+    // 웹/아이폰: JS가 직접 감시
+    alarms.forEach(alarm => {
+      if (!alarm.enabled) return;
+      if (et.hours !== alarm.h || et.minutes !== alarm.m) return;
+      if (ts - (lastTriggered[alarm.id] || 0) < 90000) return;
+      lastTriggered[alarm.id] = ts;
+      triggerAlarm(alarm);
+    });
+    TASKS.forEach(task => {
+      const t = taskState[task.id];
+      if (!t || t.notified) return;
+      if (getRemaining(task.id) <= 0) {
+        t.notified = true;
+        saveTaskState();
+        triggerTaskAlarm(task);
+      }
+    });
+  }
   renderTasks();
 }
 setInterval(tick, 1000);
@@ -581,6 +624,7 @@ document.getElementById("btn-calibrate").addEventListener("click", () => {
   localStorage.setItem("erinn-offset", String(offsetSec));
   offsetNote.style.display = "block";
   offsetNote.textContent = `보정 적용됨 (${offsetSec > 0 ? "+" : ""}${offsetSec}초)`;
+  syncToNative();
   tick();
 });
 
@@ -880,3 +924,6 @@ async function doMarketSearch() {
     resultEl.innerHTML = `<div style="text-align:center;color:#ef4444;padding:20px">오류가 발생했습니다</div>`;
   }
 }
+
+// ─── 시작 시 맥 앱에 알람/작업 목록 전달 ───
+syncToNative();

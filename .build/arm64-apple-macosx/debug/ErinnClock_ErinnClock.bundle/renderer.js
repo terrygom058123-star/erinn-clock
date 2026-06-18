@@ -63,7 +63,7 @@ const TASKS = [
 ];
 
 let taskState = JSON.parse(localStorage.getItem("erinn-tasks") || "{}");
-function saveTaskState() { localStorage.setItem("erinn-tasks", JSON.stringify(taskState)); }
+function saveTaskState() { localStorage.setItem("erinn-tasks", JSON.stringify(taskState)); if (typeof syncToNative === "function") syncToNative(); }
 
 function getRemaining(id) {
   const t = taskState[id];
@@ -228,21 +228,69 @@ function renderHomework() {
   document.getElementById("hw-daily-count").textContent  = `${dDone}/${HW_DAILY.length}`;
   document.getElementById("hw-weekly-count").textContent = `${wDone}/${HW_WEEKLY.length}`;
 
-  // 다음 리셋까지 남은 시간
-  const note = document.getElementById("hw-reset-note");
-  if (note) {
+  // 매일 리셋까지 남은 시간 (오전 6시)
+  const dNote = document.getElementById("hw-daily-reset");
+  if (dNote) {
     const now = new Date();
     const next6 = new Date(now);
     next6.setHours(6, 0, 0, 0);
     if (now.getHours() >= 6) next6.setDate(next6.getDate() + 1);
     const hrs = Math.floor((next6 - now) / 3600000);
     const mins = Math.floor(((next6 - now) % 3600000) / 60000);
-    note.textContent = `리셋까지 ${hrs}시간 ${mins}분`;
+    dNote.textContent = `리셋까지 ${hrs}시간 ${mins}분`;
+  }
+
+  // 주간 리셋까지 남은 시간 (월요일 오전 6시)
+  const wNote = document.getElementById("hw-weekly-reset");
+  if (wNote) {
+    const now = new Date();
+    const nextMon = new Date(now);
+    nextMon.setHours(6, 0, 0, 0);
+    // 다음 월요일 오전 6시까지
+    let addDays = (8 - now.getDay()) % 7; // 월요일(1)까지 남은 일수
+    if (addDays === 0 && now.getHours() >= 6) addDays = 7; // 오늘이 월요일이고 6시 지났으면 다음주
+    if (now.getDay() === 1 && now.getHours() < 6) addDays = 0; // 월요일 6시 전이면 오늘
+    nextMon.setDate(nextMon.getDate() + addDays);
+    const diff = nextMon - now;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    wNote.textContent = d > 0 ? `리셋까지 ${d}일 ${h}시간` : `리셋까지 ${h}시간`;
   }
 }
 renderHomework();
 // 1분마다 리셋 시점 체크
 setInterval(renderHomework, 60000);
+
+// ─── 탭 전환 ──────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll(".tab-panel").forEach(p => {
+    p.style.display = (p.id === "tab-" + name) ? "flex" : "none";
+  });
+  document.querySelectorAll(".tab-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === name);
+  });
+  document.getElementById("app").scrollTop = 0;
+}
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => showTab(btn.dataset.tab));
+});
+
+// ─── 미니 시계 토글 (맥 앱 전용) ───────────────────────────
+const miniBtn = document.getElementById("btn-mini-clock");
+let miniClockOn = false;
+if (miniBtn) {
+  if (!window.webkit?.messageHandlers?.toggleMiniClock) {
+    // 웹/아이폰에서는 불가
+    miniBtn.style.display = "none";
+  } else {
+    miniBtn.addEventListener("click", () => {
+      window.webkit.messageHandlers.toggleMiniClock.postMessage(null);
+      miniClockOn = !miniClockOn;
+      miniBtn.classList.toggle("on", miniClockOn);
+      miniBtn.textContent = miniClockOn ? "🕐 미니 시계 끄기" : "🕐 미니 시계 항상 띄우기";
+    });
+  }
+}
 
 // ─── 오디오 (아이폰 PWA 대응) ──────────────────────────────
 let audioCtx = null;
@@ -312,7 +360,28 @@ let titleBlinkTimer = null;
 let repeatTimer = null;
 const lastTriggered = {};
 
-function saveAlarms() { localStorage.setItem("erinn-alarms", JSON.stringify(alarms)); }
+function saveAlarms() { localStorage.setItem("erinn-alarms", JSON.stringify(alarms)); syncToNative(); }
+
+// ─── 네이티브(맥 앱) 브리지 ───────────────────────────────
+// 맥 앱에서는 Swift가 백그라운드에서 알람을 감시하므로(창 가려도 울림)
+// JS는 알람/작업 목록만 Swift로 넘긴다.
+const NATIVE = !!window.webkit?.messageHandlers?.sync;
+function syncToNative() {
+  if (!NATIVE) return;
+  const enabledAlarms = (alarms || [])
+    .filter(a => a.enabled)
+    .map(a => ({ id: a.id, label: a.label, h: a.h, m: a.m }));
+  const runningTasks = (typeof TASKS !== "undefined" ? TASKS : [])
+    .filter(t => taskState[t.id])
+    .map(t => ({
+      id: t.id,
+      label: t.name.replace("\n", " "),
+      endAt: taskState[t.id].startedAt + taskState[t.id].duration * 1000,
+    }));
+  window.webkit.messageHandlers.sync.postMessage({
+    offsetSec, alarms: enabledAlarms, tasks: runningTasks,
+  });
+}
 
 // ─── DOM 참조 ─────────────────────────────────────────────
 const clockCard    = document.getElementById("clock-card");
@@ -367,27 +436,32 @@ function tick() {
   const now = new Date();
   realTimeEl.innerHTML = `현실 시간 <span>${now.toLocaleTimeString("ko-KR")}</span>`;
 
-  // 알람 체크
   const ts = Date.now();
-  alarms.forEach(alarm => {
-    if (!alarm.enabled) return;
-    if (et.hours !== alarm.h || et.minutes !== alarm.m) return;
-    if (ts - (lastTriggered[alarm.id] || 0) < 90000) return;
-    lastTriggered[alarm.id] = ts;
-    triggerAlarm(alarm);
-  });
-
-  // 작업 타이머 완료 체크
-  TASKS.forEach(task => {
-    const t = taskState[task.id];
-    if (!t || t.notified) return;
-    const rem = getRemaining(task.id);
-    if (rem <= 0) {
-      t.notified = true;
-      saveTaskState();
-      triggerTaskAlarm(task);
-    }
-  });
+  if (NATIVE) {
+    // 맥 앱: Swift가 알람/작업을 백그라운드 감시. JS는 UI 상태(완료 표시)만 갱신.
+    TASKS.forEach(task => {
+      const t = taskState[task.id];
+      if (t && !t.notified && getRemaining(task.id) <= 0) { t.notified = true; saveTaskState(); }
+    });
+  } else {
+    // 웹/아이폰: JS가 직접 감시
+    alarms.forEach(alarm => {
+      if (!alarm.enabled) return;
+      if (et.hours !== alarm.h || et.minutes !== alarm.m) return;
+      if (ts - (lastTriggered[alarm.id] || 0) < 90000) return;
+      lastTriggered[alarm.id] = ts;
+      triggerAlarm(alarm);
+    });
+    TASKS.forEach(task => {
+      const t = taskState[task.id];
+      if (!t || t.notified) return;
+      if (getRemaining(task.id) <= 0) {
+        t.notified = true;
+        saveTaskState();
+        triggerTaskAlarm(task);
+      }
+    });
+  }
   renderTasks();
 }
 setInterval(tick, 1000);
@@ -550,6 +624,7 @@ document.getElementById("btn-calibrate").addEventListener("click", () => {
   localStorage.setItem("erinn-offset", String(offsetSec));
   offsetNote.style.display = "block";
   offsetNote.textContent = `보정 적용됨 (${offsetSec > 0 ? "+" : ""}${offsetSec}초)`;
+  syncToNative();
   tick();
 });
 
@@ -849,3 +924,6 @@ async function doMarketSearch() {
     resultEl.innerHTML = `<div style="text-align:center;color:#ef4444;padding:20px">오류가 발생했습니다</div>`;
   }
 }
+
+// ─── 시작 시 맥 앱에 알람/작업 목록 전달 ───
+syncToNative();

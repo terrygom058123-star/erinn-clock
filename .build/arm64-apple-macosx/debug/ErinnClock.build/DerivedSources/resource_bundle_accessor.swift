@@ -1,7 +1,7 @@
 import Foundation
 
 extension Foundation.Bundle {
-    static let module: Bundle = {
+    static nonisolated let module: Bundle = {
         let mainPath = Bundle.main.bundleURL.appendingPathComponent("ErinnClock_ErinnClock.bundle").path
         let buildPath = "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock_ErinnClock.bundle"
 

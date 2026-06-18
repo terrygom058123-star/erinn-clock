@@ -1,6 +1,6 @@
 {
   "": {
-    "swift-dependencies": "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/master.swiftdeps"
+    "swift-dependencies": "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/primary.swiftdeps"
   },
   "/Users/minyoungmoon/프로젝트/mabinogi-swift/Sources/AppDelegate.swift": {
     "dependencies": "/Users/minyoungmoon/프로젝트/mabinogi-swift/.build/arm64-apple-macosx/debug/ErinnClock.build/AppDelegate.d",
