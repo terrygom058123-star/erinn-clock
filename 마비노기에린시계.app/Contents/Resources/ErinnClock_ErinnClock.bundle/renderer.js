@@ -304,6 +304,15 @@ async function toggleWebPiP() {
     .p { font-size:14px; color:#94a3b8; margin-bottom:2px; }
     .t { font-size:42px; font-weight:200; font-variant-numeric:tabular-nums; line-height:1; letter-spacing:-1px; }
     .ic { font-size:18px; margin-top:4px; }
+    /* 알람 오버레이 */
+    .alarm { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
+      gap:6px; padding:8px; text-align:center; animation:flash 0.6s infinite; }
+    .alarm.on { display:flex; }
+    @keyframes flash { 0%,100%{background:#dc2626} 50%{background:#ef4444} }
+    .alarm .an { font-size:17px; font-weight:700; line-height:1.2; }
+    .alarm .at { font-size:12px; color:rgba(255,255,255,0.85); }
+    .alarm button { margin-top:4px; background:rgba(255,255,255,0.25); color:#fff; border:none;
+      padding:8px 18px; border-radius:20px; font-size:14px; font-weight:600; cursor:pointer; }
   `;
   pip.document.head.appendChild(style);
 
@@ -314,8 +323,18 @@ async function toggleWebPiP() {
   wrap.appendChild(period); wrap.appendChild(time); wrap.appendChild(icon);
   pip.document.body.appendChild(wrap);
 
-  pipEls = { period, time, icon };
+  // 알람 오버레이 (울릴 때 이 창에서 바로 끄기)
+  const alarmLayer = pip.document.createElement("div"); alarmLayer.className = "alarm";
+  const an = pip.document.createElement("div"); an.className = "an"; an.textContent = "알람";
+  const at = pip.document.createElement("div"); at.className = "at"; at.textContent = "";
+  const off = pip.document.createElement("button"); off.textContent = "🔕 끄기";
+  off.addEventListener("click", () => dismissAlert());
+  alarmLayer.appendChild(an); alarmLayer.appendChild(at); alarmLayer.appendChild(off);
+  pip.document.body.appendChild(alarmLayer);
+
+  pipEls = { period, time, icon, alarmLayer, an, at };
   updatePiP();
+  if (activeAlert) showPiPAlarm(activeAlert);  // 이미 울리는 중이면 표시
 
   pip.addEventListener("pagehide", () => { pipWindow = null; pipEls = null; setMiniBtn(false); });
   setMiniBtn(true);
@@ -330,6 +349,17 @@ function updatePiP() {
   pipEls.time.textContent = display;
   pipEls.icon.textContent = theme.icon;
   pipWindow.document.body.style.background = `linear-gradient(135deg, ${theme.from}, ${theme.to})`;
+}
+
+function showPiPAlarm(alarm) {
+  if (!pipWindow || !pipEls) return;
+  const { period, display } = formatErrin(alarm.h, alarm.m);
+  pipEls.an.textContent = "⏰ " + alarm.label;
+  pipEls.at.textContent = `에린 ${period} ${display}`;
+  pipEls.alarmLayer.classList.add("on");
+}
+function hidePiPAlarm() {
+  if (pipEls) pipEls.alarmLayer.classList.remove("on");
 }
 
 if (miniBtn) {
@@ -534,6 +564,7 @@ tick();
 function dismissAlert() {
   activeAlert = null;
   alertOverlay.classList.remove("active");
+  if (typeof hidePiPAlarm === "function") hidePiPAlarm();
   clearInterval(titleBlinkTimer); titleBlinkTimer = null;
   clearInterval(repeatTimer);     repeatTimer = null;
   document.title = "마비노기 에린시계";
@@ -549,6 +580,7 @@ function triggerAlarm(alarm) {
   alertName.textContent = alarm.label;
   alertTimeEl.textContent = `에린 ${period} ${display}`;
   alertOverlay.classList.add("active");
+  if (typeof showPiPAlarm === "function") showPiPAlarm(alarm);  // PiP 미니 시계에도 표시
 
   if (window.webkit?.messageHandlers?.alarm) {
     window.webkit.messageHandlers.alarm.postMessage({ label: alarm.label, period, time: display });
