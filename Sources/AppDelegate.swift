@@ -9,6 +9,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
     var miniWindow: NSPanel?
     var miniLabel: NSTextField?
     var miniPeriod: NSTextField?
+    var miniTasks: NSTextField?
+    var miniStack: NSStackView?
 
     // 네이티브 알람 엔진 상태
     var offsetSec: Int = 0
@@ -122,12 +124,39 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
             }
         }
 
-        // 미니 시계 갱신
+        // 미니 시계 갱신 (시계 + 진행 중 작업 타이머)
         if miniWindow != nil {
             let disp = erinnDisplay(et.h, et.m)
             miniPeriod?.stringValue = disp.period
             miniLabel?.stringValue = disp.time
+
+            var lines: [String] = []
+            for t in tasks {
+                guard let endAt = t["endAt"] as? Double else { continue }
+                let icon = t["icon"] as? String ?? "⚒️"
+                let name = t["shortName"] as? String ?? (t["label"] as? String ?? "작업")
+                let remSec = Int(max(0, (endAt - nowMs) / 1000))
+                let mmss = remSec <= 0 ? "완료!" : String(format: "%02d:%02d", remSec / 60, remSec % 60)
+                lines.append("\(icon) \(name)  \(mmss)")
+            }
+            let txt = lines.joined(separator: "\n")
+            if let tasksField = miniTasks {
+                tasksField.stringValue = txt
+                tasksField.isHidden = txt.isEmpty
+            }
+            resizeMiniToFit()
         }
+    }
+
+    func resizeMiniToFit() {
+        guard let panel = miniWindow, let stack = miniStack else { return }
+        stack.layoutSubtreeIfNeeded()
+        let fit = stack.fittingSize
+        let w: CGFloat = 200
+        let h = max(80, fit.height)
+        if abs(panel.frame.height - h) < 1 { return }   // 변화 없으면 스킵
+        let top = panel.frame.maxY
+        panel.setFrame(NSRect(x: panel.frame.minX, y: top - h, width: w, height: h), display: true)
     }
 
     func fireAlarm(label: String, sub: String) {
@@ -179,11 +208,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
             miniWindow = nil
             miniLabel = nil
             miniPeriod = nil
+            miniTasks = nil
+            miniStack = nil
             return
         }
 
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 180, height: 84),
+            contentRect: NSRect(x: 0, y: 0, width: 200, height: 90),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -196,44 +227,59 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         panel.backgroundColor = .clear
         panel.hasShadow = true
 
-        let container = NSView(frame: panel.contentView!.bounds)
-        container.wantsLayer = true
-        container.layer?.backgroundColor = NSColor(calibratedRed: 0.06, green: 0.09, blue: 0.16, alpha: 0.94).cgColor
-        container.layer?.cornerRadius = 16
-        container.autoresizingMask = [.width, .height]
+        let bg = NSView()
+        bg.wantsLayer = true
+        bg.layer?.backgroundColor = NSColor(calibratedRed: 0.06, green: 0.09, blue: 0.16, alpha: 0.94).cgColor
+        bg.layer?.cornerRadius = 16
+        panel.contentView = bg
 
         let period = NSTextField(labelWithString: "오후")
         period.font = .systemFont(ofSize: 13, weight: .regular)
         period.textColor = NSColor(white: 0.7, alpha: 1)
-        period.frame = NSRect(x: 0, y: 56, width: 180, height: 18)
         period.alignment = .center
-        period.backgroundColor = .clear
-        period.isBezeled = false
-        period.isEditable = false
+        period.isBezeled = false; period.isEditable = false; period.backgroundColor = .clear
 
         let time = NSTextField(labelWithString: "--:--")
-        time.font = .monospacedDigitSystemFont(ofSize: 38, weight: .thin)
+        time.font = .monospacedDigitSystemFont(ofSize: 36, weight: .thin)
         time.textColor = .white
-        time.frame = NSRect(x: 0, y: 8, width: 180, height: 46)
         time.alignment = .center
-        time.backgroundColor = .clear
-        time.isBezeled = false
-        time.isEditable = false
+        time.isBezeled = false; time.isEditable = false; time.backgroundColor = .clear
 
-        container.addSubview(period)
-        container.addSubview(time)
-        panel.contentView?.addSubview(container)
+        let tasksField = NSTextField(labelWithString: "")
+        tasksField.font = .monospacedDigitSystemFont(ofSize: 13, weight: .semibold)
+        tasksField.textColor = NSColor(calibratedRed: 0.52, green: 0.80, blue: 0.45, alpha: 1)
+        tasksField.alignment = .center
+        tasksField.isBezeled = false; tasksField.isEditable = false; tasksField.backgroundColor = .clear
+        tasksField.maximumNumberOfLines = 0
+        tasksField.lineBreakMode = .byWordWrapping
+        tasksField.isHidden = true
+
+        let stack = NSStackView(views: [period, time, tasksField])
+        stack.orientation = .vertical
+        stack.alignment = .centerX
+        stack.spacing = 3
+        stack.edgeInsets = NSEdgeInsets(top: 10, left: 12, bottom: 10, right: 12)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        bg.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: bg.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: bg.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: bg.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bg.bottomAnchor),
+        ])
 
         // 우측 상단에 배치
         if let screen = NSScreen.main {
             let vf = screen.visibleFrame
-            panel.setFrameOrigin(NSPoint(x: vf.maxX - 200, y: vf.maxY - 104))
+            panel.setFrameOrigin(NSPoint(x: vf.maxX - 220, y: vf.maxY - 110))
         }
         panel.orderFrontRegardless()
 
         miniWindow = panel
         miniLabel = time
         miniPeriod = period
+        miniTasks = tasksField
+        miniStack = stack
         engineTick()  // 즉시 1회 갱신
     }
 

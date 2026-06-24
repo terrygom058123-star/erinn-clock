@@ -300,10 +300,18 @@ async function toggleWebPiP() {
   style.textContent = `
     * { margin:0; padding:0; box-sizing:border-box; }
     body { height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
-      background:#0b1120; color:#fff; font-family:-apple-system,BlinkMacSystemFont,sans-serif; user-select:none; }
-    .p { font-size:14px; color:#94a3b8; margin-bottom:2px; }
-    .t { font-size:42px; font-weight:200; font-variant-numeric:tabular-nums; line-height:1; letter-spacing:-1px; }
-    .ic { font-size:18px; margin-top:4px; }
+      gap:8px; background:#0b1120; color:#fff; font-family:-apple-system,BlinkMacSystemFont,sans-serif; user-select:none; }
+    .clock { display:flex; flex-direction:column; align-items:center; }
+    .p { font-size:13px; color:#94a3b8; margin-bottom:1px; }
+    .t { font-size:38px; font-weight:200; font-variant-numeric:tabular-nums; line-height:1; letter-spacing:-1px; }
+    .ic { font-size:16px; margin-top:2px; }
+    /* 작업 타이머 */
+    .tasks { display:flex; flex-direction:column; gap:4px; width:100%; padding:0 12px; }
+    .trow { display:flex; align-items:center; justify-content:space-between;
+      background:rgba(255,255,255,0.1); border-radius:8px; padding:4px 8px; }
+    .trow .tn { font-size:12px; }
+    .trow .tv { font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .trow.done { background:rgba(245,158,11,0.25); }
     /* 알람 오버레이 */
     .alarm { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
       gap:6px; padding:8px; text-align:center; animation:flash 0.6s infinite; }
@@ -316,12 +324,16 @@ async function toggleWebPiP() {
   `;
   pip.document.head.appendChild(style);
 
-  const wrap = pip.document.createElement("div");
+  const wrap = pip.document.createElement("div"); wrap.className = "clock";
   const period = pip.document.createElement("div"); period.className = "p"; period.textContent = "오전";
   const time   = pip.document.createElement("div"); time.className = "t"; time.textContent = "--:--";
   const icon   = pip.document.createElement("div"); icon.className = "ic"; icon.textContent = "🕐";
   wrap.appendChild(period); wrap.appendChild(time); wrap.appendChild(icon);
   pip.document.body.appendChild(wrap);
+
+  // 작업 타이머 영역
+  const tasksEl = pip.document.createElement("div"); tasksEl.className = "tasks";
+  pip.document.body.appendChild(tasksEl);
 
   // 알람 오버레이 (울릴 때 이 창에서 바로 끄기)
   const alarmLayer = pip.document.createElement("div"); alarmLayer.className = "alarm";
@@ -332,12 +344,17 @@ async function toggleWebPiP() {
   alarmLayer.appendChild(an); alarmLayer.appendChild(at); alarmLayer.appendChild(off);
   pip.document.body.appendChild(alarmLayer);
 
-  pipEls = { period, time, icon, alarmLayer, an, at };
+  pipEls = { period, time, icon, tasksEl, alarmLayer, an, at };
   updatePiP();
   if (activeAlert) showPiPAlarm(activeAlert);  // 이미 울리는 중이면 표시
 
   pip.addEventListener("pagehide", () => { pipWindow = null; pipEls = null; setMiniBtn(false); });
   setMiniBtn(true);
+}
+
+function fmtMMSS(sec) {
+  const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+  return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }
 
 function updatePiP() {
@@ -349,6 +366,25 @@ function updatePiP() {
   pipEls.time.textContent = display;
   pipEls.icon.textContent = theme.icon;
   pipWindow.document.body.style.background = `linear-gradient(135deg, ${theme.from}, ${theme.to})`;
+
+  // 진행 중인 작업 타이머 표시
+  const running = (typeof TASKS !== "undefined" ? TASKS : []).filter(t => taskState[t.id]);
+  let html = "";
+  running.forEach(t => {
+    const rem = getRemaining(t.id);
+    const done = rem <= 0;
+    const right = done ? "완료!" : fmtMMSS(rem);
+    html += `<div class="trow ${done ? "done" : ""}"><span class="tn">${t.icon} ${t.name.split("\n")[0]}</span><span class="tv">${right}</span></div>`;
+  });
+  pipEls.tasksEl.innerHTML = html;
+
+  // 창 높이 자동 조절 (시계 + 작업 수)
+  try {
+    const h = 110 + running.length * 32;
+    if (pipWindow.innerHeight && Math.abs(pipWindow.innerHeight - h) > 8) {
+      pipWindow.resizeTo(pipWindow.outerWidth || 220, h);
+    }
+  } catch(e) {}
 }
 
 function showPiPAlarm(alarm) {
@@ -466,6 +502,8 @@ function syncToNative() {
     .map(t => ({
       id: t.id,
       label: t.name.replace("\n", " "),
+      shortName: t.name.split("\n")[0],
+      icon: t.icon,
       endAt: taskState[t.id].startedAt + taskState[t.id].duration * 1000,
     }));
   window.webkit.messageHandlers.sync.postMessage({
