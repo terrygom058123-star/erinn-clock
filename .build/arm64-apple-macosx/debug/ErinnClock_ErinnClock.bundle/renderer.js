@@ -549,8 +549,11 @@ function tick() {
   const theme = getTheme(et.hours, et.minutes);
 
   // 시계 UI
-  clockCard.style.background = `linear-gradient(135deg, ${theme.from}, ${theme.to})`;
-  clockLabel.textContent  = `에린 시간 · ${theme.label}`;
+  // 알람 발동 중(웹)에는 카드가 빨갛게 깜빡이므로 배경/라벨을 덮어쓰지 않음
+  if (!activeAlert) {
+    clockCard.style.background = `linear-gradient(135deg, ${theme.from}, ${theme.to})`;
+    clockLabel.textContent  = `에린 시간 · ${theme.label}`;
+  }
   clockIcon.textContent   = theme.icon;
   clockPeriod.textContent = period;
   clockDigits.textContent = display;
@@ -598,10 +601,19 @@ function tick() {
 setInterval(tick, 1000);
 tick();
 
-// ─── 알람 발동 ────────────────────────────────────────────
+// ─── 알람 발동 (팝업 대신 시계 카드 빨강 깜빡임) ─────────────
+function flashClockCard(labelText) {
+  clockCard.style.background = "";              // CSS 애니메이션이 색 제어
+  clockCard.classList.add("alarm-flash");
+  clockLabel.textContent = "⏰ " + labelText + " · 눌러서 끄기";
+}
+function clearClockFlash() {
+  clockCard.classList.remove("alarm-flash");
+}
+
 function dismissAlert() {
   activeAlert = null;
-  alertOverlay.classList.remove("active");
+  clearClockFlash();
   if (typeof hidePiPAlarm === "function") hidePiPAlarm();
   clearInterval(titleBlinkTimer); titleBlinkTimer = null;
   clearInterval(repeatTimer);     repeatTimer = null;
@@ -615,9 +627,7 @@ function triggerAlarm(alarm) {
   const { period, display } = formatErrin(alarm.h, alarm.m);
   activeAlert = alarm;
 
-  alertName.textContent = alarm.label;
-  alertTimeEl.textContent = `에린 ${period} ${display}`;
-  alertOverlay.classList.add("active");
+  flashClockCard(alarm.label);
   if (typeof showPiPAlarm === "function") showPiPAlarm(alarm);  // PiP 미니 시계에도 표시
 
   if (window.webkit?.messageHandlers?.alarm) {
@@ -654,10 +664,9 @@ function triggerAlarm(alarm) {
 
 function triggerTaskAlarm(task) {
   dismissAlert();
+  activeAlert = { id: "task_" + task.id, label: task.name.split("\n")[0] };
 
-  alertName.textContent = task.name.replace("\n", " · ");
-  alertTimeEl.textContent = "작업 완료! 🎉";
-  alertOverlay.classList.add("active");
+  flashClockCard(task.name.split("\n")[0] + " 완료! 🎉");
 
   if (window.webkit?.messageHandlers?.playSound) {
     window.webkit.messageHandlers.playSound.postMessage(null);
@@ -673,8 +682,12 @@ function triggerTaskAlarm(task) {
   }, 800);
 }
 
-alertOverlay.addEventListener("click", dismissAlert);
-document.getElementById("alert-dismiss").addEventListener("click", e => { e.stopPropagation(); dismissAlert(); });
+// 시계 카드를 누르면 알람 끄기 (발동 중일 때만)
+clockCard.addEventListener("click", () => { if (activeAlert) dismissAlert(); });
+// 기존 오버레이(있으면)도 닫기 호환
+if (alertOverlay) alertOverlay.addEventListener("click", dismissAlert);
+const alertDismissBtn = document.getElementById("alert-dismiss");
+if (alertDismissBtn) alertDismissBtn.addEventListener("click", e => { e.stopPropagation(); dismissAlert(); });
 
 // ─── 알람 목록 렌더링 ─────────────────────────────────────
 function renderAlarms() {

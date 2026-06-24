@@ -167,6 +167,16 @@ body {
 }
 .btn-del:hover { color: #ef4444; }
 
+/* 알람 발동 시 시계 카드 빨강 깜빡임 */
+.clock-card.alarm-flash {
+  animation: cardAlarm 0.7s ease-in-out infinite;
+  cursor: pointer;
+}
+@keyframes cardAlarm {
+  0%, 100% { background: #dc2626 !important; }
+  50%      { background: #7f1d1d !important; }
+}
+
 /* 미니 시계 버튼 */
 .btn-mini-clock {
   width: 100%;

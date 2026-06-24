@@ -20,6 +20,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
     var engineTimer: Timer?
     var activityToken: NSObjectProtocol?   // App Nap 방지
 
+    // 알람 발동 상태 (팝업 대신 미니 시계 깜빡임)
+    var alarmActive = false
+    var alarmText = ""
+    var flashTimer: Timer?
+    var flashOn = false
+    var flashTicks = 0
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenu()
 
@@ -124,25 +131,37 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
             }
         }
 
-        // 미니 시계 갱신 (시계 + 진행 중 작업 타이머)
+        // 미니 시계 갱신
         if miniWindow != nil {
-            let disp = erinnDisplay(et.h, et.m)
-            miniPeriod?.stringValue = disp.period
-            miniLabel?.stringValue = disp.time
+            if alarmActive {
+                // 알람 모드: 깜빡임 + 안내 (flashTimer가 배경 처리)
+                miniPeriod?.stringValue = "⏰ 알람"
+                miniLabel?.font = .systemFont(ofSize: 17, weight: .bold)
+                miniLabel?.stringValue = alarmText
+                miniTasks?.isHidden = false
+                miniTasks?.textColor = .white
+                miniTasks?.stringValue = "👆 눌러서 끄기"
+            } else {
+                let disp = erinnDisplay(et.h, et.m)
+                miniPeriod?.stringValue = disp.period
+                miniLabel?.font = .monospacedDigitSystemFont(ofSize: 36, weight: .thin)
+                miniLabel?.stringValue = disp.time
 
-            var lines: [String] = []
-            for t in tasks {
-                guard let endAt = t["endAt"] as? Double else { continue }
-                let icon = t["icon"] as? String ?? "⚒️"
-                let name = t["shortName"] as? String ?? (t["label"] as? String ?? "작업")
-                let remSec = Int(max(0, (endAt - nowMs) / 1000))
-                let mmss = remSec <= 0 ? "완료!" : String(format: "%02d:%02d", remSec / 60, remSec % 60)
-                lines.append("\(icon) \(name)  \(mmss)")
-            }
-            let txt = lines.joined(separator: "\n")
-            if let tasksField = miniTasks {
-                tasksField.stringValue = txt
-                tasksField.isHidden = txt.isEmpty
+                var lines: [String] = []
+                for t in tasks {
+                    guard let endAt = t["endAt"] as? Double else { continue }
+                    let icon = t["icon"] as? String ?? "⚒️"
+                    let name = t["shortName"] as? String ?? (t["label"] as? String ?? "작업")
+                    let remSec = Int(max(0, (endAt - nowMs) / 1000))
+                    let mmss = remSec <= 0 ? "완료!" : String(format: "%02d:%02d", remSec / 60, remSec % 60)
+                    lines.append("\(icon) \(name)  \(mmss)")
+                }
+                let txt = lines.joined(separator: "\n")
+                if let tasksField = miniTasks {
+                    tasksField.textColor = NSColor(calibratedRed: 0.52, green: 0.80, blue: 0.45, alpha: 1)
+                    tasksField.stringValue = txt
+                    tasksField.isHidden = txt.isEmpty
+                }
             }
             resizeMiniToFit()
         }
@@ -159,16 +178,50 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         panel.setFrame(NSRect(x: panel.frame.minX, y: top - h, width: w, height: h), display: true)
     }
 
+    // 알람 발동: 팝업 대신 미니 시계를 빨갛게 깜빡이며 알림
     func fireAlarm(label: String, sub: String) {
+        alarmActive = true
+        alarmText = "\(label)"
         playSound()
-        let alert = NSAlert()
-        alert.messageText = "⏰  \(label)"
-        alert.informativeText = "\(sub)\n\n확인을 눌러 끄세요."
-        alert.alertStyle = .critical
-        alert.addButton(withTitle: "확인")
-        NSApp.activate(ignoringOtherApps: true)
-        alert.window.level = .floating
-        alert.runModal()
+
+        // 미니 시계가 꺼져 있으면 자동으로 띄움 (항상 보이도록)
+        if miniWindow == nil { showMiniWindow() }
+
+        // 깜빡임 시작
+        flashTimer?.invalidate()
+        flashTicks = 0
+        let ft = Timer(timeInterval: 0.5, target: self, selector: #selector(flashTick), userInfo: nil, repeats: true)
+        RunLoop.main.add(ft, forMode: .common)
+        flashTimer = ft
+        flashTick()
+        engineTick()
+    }
+
+    @objc func flashTick() {
+        flashOn.toggle()
+        flashTicks += 1
+        if let bg = miniWindow?.contentView {
+            bg.layer?.backgroundColor = flashOn
+                ? NSColor(calibratedRed: 0.86, green: 0.15, blue: 0.15, alpha: 0.97).cgColor   // 빨강
+                : NSColor(calibratedRed: 0.55, green: 0.05, blue: 0.05, alpha: 0.97).cgColor   // 어두운 빨강
+        }
+        // 6틱(3초)마다 소리 재생 (끌 때까지)
+        if flashTicks % 6 == 0 { playSound() }
+    }
+
+    func dismissNativeAlarm() {
+        if !alarmActive { return }
+        alarmActive = false
+        flashTimer?.invalidate(); flashTimer = nil
+        flashOn = false
+        // 배경 원래색 복귀
+        miniWindow?.contentView?.layer?.backgroundColor =
+            NSColor(calibratedRed: 0.06, green: 0.09, blue: 0.16, alpha: 0.94).cgColor
+        engineTick()
+    }
+
+    @objc func miniClicked() {
+        if alarmActive { dismissNativeAlarm() }
     }
 
     // JavaScript → Swift 메시지 수신
@@ -203,8 +256,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
 
     // ─── 미니 시계 (모든 앱 위 항상 표시) ───
     func toggleMiniClock() {
-        if let w = miniWindow {
-            w.close()
+        if miniWindow != nil {
+            dismissNativeAlarm()
+            miniWindow?.close()
             miniWindow = nil
             miniLabel = nil
             miniPeriod = nil
@@ -212,6 +266,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
             miniStack = nil
             return
         }
+        showMiniWindow()
+    }
+
+    func showMiniWindow() {
+        if miniWindow != nil { return }
 
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 200, height: 90),
@@ -232,6 +291,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         bg.layer?.backgroundColor = NSColor(calibratedRed: 0.06, green: 0.09, blue: 0.16, alpha: 0.94).cgColor
         bg.layer?.cornerRadius = 16
         panel.contentView = bg
+
+        // 클릭 시 알람 끄기
+        let click = NSClickGestureRecognizer(target: self, action: #selector(miniClicked))
+        bg.addGestureRecognizer(click)
 
         let period = NSTextField(labelWithString: "오후")
         period.font = .systemFont(ofSize: 13, weight: .regular)
