@@ -104,11 +104,7 @@ function renderTasks() {
   }).join("");
 
   container.querySelectorAll(".btn-task-start").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const task = TASKS.find(t => t.id === btn.dataset.id);
-      taskState[task.id] = { startedAt: Date.now(), duration: task.duration, notified: false };
-      saveTaskState(); renderTasks();
-    });
+    btn.addEventListener("click", () => startTaskById(btn.dataset.id));
   });
   container.querySelectorAll(".btn-task-reset").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -116,6 +112,16 @@ function renderTasks() {
       saveTaskState(); renderTasks();
     });
   });
+}
+
+// 작업 시작/재시작 (메인 UI · PiP 공용)
+function startTaskById(id) {
+  const task = TASKS.find(t => t.id === id);
+  if (!task) return;
+  taskState[task.id] = { startedAt: Date.now(), duration: task.duration, notified: false };
+  saveTaskState();
+  renderTasks();
+  if (typeof updatePiP === "function") updatePiP();
 }
 renderTasks();
 
@@ -312,6 +318,9 @@ async function toggleWebPiP() {
     .trow .tn { font-size:12px; }
     .trow .tv { font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; }
     .trow.done { background:rgba(245,158,11,0.25); }
+    .trestart { background:#16a34a; color:#fff; border:none; border-radius:7px;
+      padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer; }
+    .trestart:active { background:#15803d; }
     /* 알람 오버레이 */
     .alarm { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
       gap:6px; padding:8px; text-align:center; animation:flash 0.6s infinite; }
@@ -373,10 +382,17 @@ function updatePiP() {
   running.forEach(t => {
     const rem = getRemaining(t.id);
     const done = rem <= 0;
-    const right = done ? "완료!" : fmtMMSS(rem);
-    html += `<div class="trow ${done ? "done" : ""}"><span class="tn">${t.icon} ${t.name.split("\n")[0]}</span><span class="tv">${right}</span></div>`;
+    const right = done
+      ? `<button class="trestart" data-id="${t.id}">▶ 재시작</button>`
+      : `<span class="tv">${fmtMMSS(rem)}</span>`;
+    html += `<div class="trow ${done ? "done" : ""}"><span class="tn">${t.icon} ${t.name.split("\n")[0]}</span>${right}</div>`;
   });
   pipEls.tasksEl.innerHTML = html;
+
+  // 완료된 작업 재시작 버튼
+  pipEls.tasksEl.querySelectorAll(".trestart").forEach(btn => {
+    btn.addEventListener("click", () => startTaskById(btn.dataset.id));
+  });
 
   // 창 높이 자동 조절 (시계 + 작업 수)
   try {
