@@ -618,10 +618,12 @@ setInterval(tick, 1000);
 tick();
 
 // ─── 알람 발동 (팝업 대신 시계 카드 빨강 깜빡임) ─────────────
-function flashClockCard(labelText) {
+function flashClockCard(label, sub) {
   clockCard.style.background = "";              // CSS 애니메이션이 색 제어
   clockCard.classList.add("alarm-flash");
-  clockLabel.textContent = "⏰ " + labelText + " · 눌러서 끄기";
+  // 어떤 알람인지(이름 + 에린 시각) + 끄기 안내
+  clockLabel.textContent = sub ? `⏰ ${label} · ${sub} · 눌러서 끄기`
+                               : `⏰ ${label} · 눌러서 끄기`;
 }
 function clearClockFlash() {
   clockCard.classList.remove("alarm-flash");
@@ -634,6 +636,7 @@ function dismissAlert() {
   clearInterval(titleBlinkTimer); titleBlinkTimer = null;
   clearInterval(repeatTimer);     repeatTimer = null;
   document.title = "마비노기 에린시계";
+  if (typeof renderAlarms === "function") renderAlarms();  // 강조 해제
 }
 
 function triggerAlarm(alarm) {
@@ -643,8 +646,9 @@ function triggerAlarm(alarm) {
   const { period, display } = formatErrin(alarm.h, alarm.m);
   activeAlert = alarm;
 
-  flashClockCard(alarm.label);
+  flashClockCard(alarm.label, `에린 ${period} ${display}`);
   if (typeof showPiPAlarm === "function") showPiPAlarm(alarm);  // PiP 미니 시계에도 표시
+  renderAlarms();  // 목록에서 울리는 알람 강조
 
   if (window.webkit?.messageHandlers?.alarm) {
     window.webkit.messageHandlers.alarm.postMessage({ label: alarm.label, period, time: display });
@@ -682,7 +686,7 @@ function triggerTaskAlarm(task) {
   dismissAlert();
   activeAlert = { id: "task_" + task.id, label: task.name.split("\n")[0] };
 
-  flashClockCard(task.name.split("\n")[0] + " 완료! 🎉");
+  flashClockCard(task.name.split("\n")[0], "작업 완료! 🎉");
 
   if (window.webkit?.messageHandlers?.playSound) {
     window.webkit.messageHandlers.playSound.postMessage(null);
@@ -713,11 +717,12 @@ function renderAlarms() {
   }
   alarmList.innerHTML = alarms.map(a => {
     const { period, display } = formatErrin(a.h, a.m);
-    return `<div class="alarm-item ${a.enabled ? "" : "disabled"}" data-id="${a.id}">
+    const ringing = activeAlert && activeAlert.id === a.id;
+    return `<div class="alarm-item ${a.enabled ? "" : "disabled"} ${ringing ? "ringing" : ""}" data-id="${a.id}">
       <div class="alarm-left">
-        <span class="alarm-emoji">${a.enabled ? "🔔" : "🔕"}</span>
+        <span class="alarm-emoji">${ringing ? "🔴" : (a.enabled ? "🔔" : "🔕")}</span>
         <div>
-          <div class="alarm-name">${a.label}</div>
+          <div class="alarm-name">${a.label}${ringing ? " · 울리는 중" : ""}</div>
           <div class="alarm-sub">에린 ${period} ${display}</div>
         </div>
       </div>

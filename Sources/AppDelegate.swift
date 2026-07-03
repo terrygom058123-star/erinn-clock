@@ -22,7 +22,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
 
     // 알람 발동 상태 (팝업 대신 미니 시계 깜빡임)
     var alarmActive = false
-    var alarmText = ""
+    var alarmText = ""   // 알람 이름
+    var alarmSub  = ""   // 에린 시각 / "작업 완료"
     var flashTimer: Timer?
     var flashOn = false
     var flashTicks = 0
@@ -134,10 +135,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         // 미니 시계 갱신
         if miniWindow != nil {
             if alarmActive {
-                // 알람 모드: 깜빡임 + 안내 (flashTimer가 배경 처리)
-                miniPeriod?.stringValue = "⏰ 알람"
-                miniLabel?.font = .systemFont(ofSize: 17, weight: .bold)
-                miniLabel?.stringValue = alarmText
+                // 알람 모드: 어떤 알람인지(이름+시각) 표시 + 깜빡임
+                miniPeriod?.stringValue = "⏰ \(alarmText)"       // 알람 이름
+                miniLabel?.font = .systemFont(ofSize: 20, weight: .bold)
+                miniLabel?.stringValue = alarmSub                 // 에린 시각 / 작업 완료
                 miniTasks?.isHidden = false
                 miniTasks?.textColor = .white
                 miniTasks?.stringValue = "👆 눌러서 끄기"
@@ -181,7 +182,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
     // 알람 발동: 팝업 대신 미니 시계를 빨갛게 깜빡이며 알림
     func fireAlarm(label: String, sub: String) {
         alarmActive = true
-        alarmText = "\(label)"
+        alarmText = label
+        alarmSub = sub
         playSound()
 
         // 미니 시계가 꺼져 있으면 자동으로 띄움 (항상 보이도록)

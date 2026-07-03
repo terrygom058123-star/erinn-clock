@@ -144,6 +144,16 @@ body {
   transition: opacity 0.2s;
 }
 .alarm-item.disabled { opacity: 0.45; }
+.alarm-item.ringing {
+  border-color: #ef4444;
+  background: #3b1218;
+  animation: alarmRow 0.7s ease-in-out infinite;
+}
+@keyframes alarmRow {
+  0%, 100% { border-color: #ef4444; }
+  50%      { border-color: #7f1d1d; }
+}
+.alarm-item.ringing .alarm-name { color: #fca5a5; }
 .alarm-left { display: flex; align-items: center; gap: 12px; }
 .alarm-emoji { font-size: 22px; }
 .alarm-name { font-size: 14px; font-weight: 500; color: #e2e8f0; }
