@@ -27,6 +27,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
     var flashTimer: Timer?
     var flashOn = false
     var flashTicks = 0
+    var autoDismissTimer: Timer?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupMenu()
@@ -184,20 +185,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         alarmActive = true
         alarmText = label
         alarmSub = sub
-        playSound()
+        playSound()   // 소리는 발동 시 한 번만
 
         // 미니 시계가 꺼져 있으면 자동으로 띄움 (항상 보이도록)
         if miniWindow == nil { showMiniWindow() }
 
-        // 깜빡임 시작
+        // 깜빡임 시작 (소리는 반복하지 않음)
         flashTimer?.invalidate()
         flashTicks = 0
         let ft = Timer(timeInterval: 0.5, target: self, selector: #selector(flashTick), userInfo: nil, repeats: true)
         RunLoop.main.add(ft, forMode: .common)
         flashTimer = ft
         flashTick()
+
+        // 30초 후 자동으로 멈춤 (안 끄고 놔둬도 계속 울리지 않도록)
+        autoDismissTimer?.invalidate()
+        let at = Timer(timeInterval: 30.0, target: self, selector: #selector(autoDismiss), userInfo: nil, repeats: false)
+        RunLoop.main.add(at, forMode: .common)
+        autoDismissTimer = at
+
         engineTick()
     }
+
+    @objc func autoDismiss() { dismissNativeAlarm() }
 
     @objc func flashTick() {
         flashOn.toggle()
@@ -207,14 +217,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
                 ? NSColor(calibratedRed: 0.86, green: 0.15, blue: 0.15, alpha: 0.97).cgColor   // 빨강
                 : NSColor(calibratedRed: 0.55, green: 0.05, blue: 0.05, alpha: 0.97).cgColor   // 어두운 빨강
         }
-        // 6틱(3초)마다 소리 재생 (끌 때까지)
-        if flashTicks % 6 == 0 { playSound() }
     }
 
     func dismissNativeAlarm() {
         if !alarmActive { return }
         alarmActive = false
         flashTimer?.invalidate(); flashTimer = nil
+        autoDismissTimer?.invalidate(); autoDismissTimer = nil
         flashOn = false
         // 배경 원래색 복귀
         miniWindow?.contentView?.layer?.backgroundColor =

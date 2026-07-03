@@ -650,10 +650,8 @@ function triggerAlarm(alarm) {
   if (typeof showPiPAlarm === "function") showPiPAlarm(alarm);  // PiP 미니 시계에도 표시
   renderAlarms();  // 목록에서 울리는 알람 강조
 
-  if (window.webkit?.messageHandlers?.alarm) {
-    window.webkit.messageHandlers.alarm.postMessage({ label: alarm.label, period, time: display });
-    window.webkit.messageHandlers.playSound.postMessage(null);
-  } else if (window.electronAPI) {
+  // 소리는 발동 시 한 번만
+  if (window.electronAPI) {
     window.electronAPI.triggerAlert({ label: alarm.label, period, time: display });
     window.electronAPI.playSound();
   } else {
@@ -667,19 +665,8 @@ function triggerAlarm(alarm) {
     blink = !blink;
   }, 800);
 
-  repeatTimer = setInterval(() => {
-    // 이미 꺼진 알람이면 반복 중단
-    const stillEnabled = alarms.find(a => a.id === alarm.id && a.enabled);
-    if (!stillEnabled) { dismissAlert(); return; }
-    if (window.webkit?.messageHandlers?.playSound) {
-      window.webkit.messageHandlers.playSound.postMessage(null);
-    } else if (window.electronAPI) {
-      window.electronAPI.playSound();
-    } else {
-      playWebSound();
-      sendNotification(alarm.label, period, display);
-    }
-  }, 30000);
+  // 30초 후 자동으로 멈춤 (안 끄고 놔둬도 계속 울리지 않도록)
+  repeatTimer = setTimeout(() => dismissAlert(), 30000);
 }
 
 function triggerTaskAlarm(task) {
@@ -688,18 +675,18 @@ function triggerTaskAlarm(task) {
 
   flashClockCard(task.name.split("\n")[0], "작업 완료! 🎉");
 
-  if (window.webkit?.messageHandlers?.playSound) {
-    window.webkit.messageHandlers.playSound.postMessage(null);
-  } else {
-    playWebSound();
-    sendNotification(task.name.replace("\n", " · "), "", "작업 완료! 🎉");
-  }
+  // 소리 한 번만
+  playWebSound();
+  sendNotification(task.name.replace("\n", " · "), "", "작업 완료! 🎉");
 
   let blink = false;
   titleBlinkTimer = setInterval(() => {
     document.title = blink ? `🔴 ${task.name.split("\n")[0]} 완료!` : "마비노기 에린시계";
     blink = !blink;
   }, 800);
+
+  // 30초 후 자동으로 멈춤
+  repeatTimer = setTimeout(() => dismissAlert(), 30000);
 }
 
 // 시계 카드를 누르면 알람 끄기 (발동 중일 때만)
