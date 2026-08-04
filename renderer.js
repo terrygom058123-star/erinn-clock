@@ -63,7 +63,11 @@ const TASKS = [
 ];
 
 let taskState = JSON.parse(localStorage.getItem("erinn-tasks") || "{}");
-function saveTaskState() { localStorage.setItem("erinn-tasks", JSON.stringify(taskState)); if (typeof syncToNative === "function") syncToNative(); }
+function saveTaskState() {
+  localStorage.setItem("erinn-tasks", JSON.stringify(taskState));
+  if (typeof syncToNative === "function") syncToNative();
+  if (typeof syncToPush === "function") syncToPush();
+}
 
 function getRemaining(id) {
   const t = taskState[id];
@@ -502,19 +506,21 @@ let titleBlinkTimer = null;
 let repeatTimer = null;
 const lastTriggered = {};
 
-function saveAlarms() { localStorage.setItem("erinn-alarms", JSON.stringify(alarms)); syncToNative(); }
+function saveAlarms() { localStorage.setItem("erinn-alarms", JSON.stringify(alarms)); syncToNative(); syncToPush(); }
 
 // ─── 네이티브(맥 앱) 브리지 ───────────────────────────────
 // 맥 앱에서는 Swift가 백그라운드에서 알람을 감시하므로(창 가려도 울림)
 // JS는 알람/작업 목록만 Swift로 넘긴다.
 const NATIVE = !!window.webkit?.messageHandlers?.sync;
-function syncToNative() {
-  if (!NATIVE) return;
-  const enabledAlarms = (alarms || [])
+
+function currentEnabledAlarms() {
+  return (alarms || [])
     .filter(a => a.enabled)
     .map(a => ({ id: a.id, label: a.label, h: a.h, m: a.m }));
-  const runningTasks = (typeof TASKS !== "undefined" ? TASKS : [])
-    .filter(t => taskState[t.id])
+}
+function currentRunningTasks() {
+  return (typeof TASKS !== "undefined" ? TASKS : [])
+    .filter(t => taskState[t.id] && getRemaining(t.id) > 0)
     .map(t => ({
       id: t.id,
       label: t.name.replace("\n", " "),
@@ -522,10 +528,115 @@ function syncToNative() {
       icon: t.icon,
       endAt: taskState[t.id].startedAt + taskState[t.id].duration * 1000,
     }));
+}
+
+function syncToNative() {
+  if (!NATIVE) return;
   window.webkit.messageHandlers.sync.postMessage({
-    offsetSec, alarms: enabledAlarms, tasks: runningTasks,
+    offsetSec, alarms: currentEnabledAlarms(), tasks: currentRunningTasks(),
   });
 }
+
+// ─── 웹 푸시 (애플워치 진동용) ────────────────────────────────
+// 서버가 정해진 시각에 정확히 깨어나 아이폰으로 푸시를 보내고,
+// 아이폰이 알림을 받으면 애플워치도 자동으로 손목 진동함.
+const PUSH_SERVER = "https://mabinogi-push-server.terrygom.workers.dev";
+const VAPID_PUBLIC_KEY = "BHa2y_Smp8sIFCCAZx0PkFl_wIoez9f-gUBTodydlklAPfKGj7uKWFtSkkaz3aEmVhgaW8w50BvonWa35MW3Y3k";
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+const pushSupported = "serviceWorker" in navigator && "PushManager" in window;
+let pushSubscription = null;
+
+async function initPush() {
+  if (!pushSupported) return;
+  try {
+    const reg = await navigator.serviceWorker.register("sw.js");
+    pushSubscription = await reg.pushManager.getSubscription();
+    updatePushButton();
+  } catch (e) {
+    console.warn("SW 등록 실패", e);
+  }
+}
+
+async function subscribePush() {
+  if (!pushSupported) {
+    alert("이 브라우저는 알림을 지원하지 않아요.\n아이폰은 Safari로 홈 화면에 추가한 뒤 이용해주세요 (iOS 16.4 이상).");
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") {
+    alert("알림 권한을 허용해야 워치로 알림을 보낼 수 있어요.");
+    return;
+  }
+  const reg = await navigator.serviceWorker.ready;
+  pushSubscription = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+  });
+
+  await fetch(`${PUSH_SERVER}/subscribe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      subscription: pushSubscription.toJSON(),
+      alarms: currentEnabledAlarms(),
+      tasks: currentRunningTasks(),
+      offsetSec,
+    }),
+  });
+  updatePushButton();
+}
+
+async function unsubscribePush() {
+  if (!pushSubscription) return;
+  try {
+    await fetch(`${PUSH_SERVER}/unsubscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ endpoint: pushSubscription.endpoint }),
+    });
+  } catch (e) {}
+  await pushSubscription.unsubscribe();
+  pushSubscription = null;
+  updatePushButton();
+}
+
+function syncToPush() {
+  if (!pushSubscription) return;
+  fetch(`${PUSH_SERVER}/sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ alarms: currentEnabledAlarms(), tasks: currentRunningTasks(), offsetSec }),
+  }).catch(() => {});
+}
+
+function updatePushButton() {
+  const btn = document.getElementById("btn-push-toggle");
+  const status = document.getElementById("push-status");
+  if (!btn) return;
+  if (pushSubscription) {
+    btn.textContent = "🔕 워치 알림 끄기";
+    if (status) { status.style.display = "block"; status.textContent = "워치 알림 켜짐 · 앱을 꺼도 정해진 시각에 진동이 옵니다"; }
+  } else {
+    btn.textContent = "🔔 워치 알림 켜기";
+    if (status) status.style.display = "none";
+  }
+}
+
+document.getElementById("btn-push-toggle")?.addEventListener("click", () => {
+  if (pushSubscription) unsubscribePush();
+  else subscribePush();
+});
+
+initPush();
 
 // ─── DOM 참조 ─────────────────────────────────────────────
 const clockCard    = document.getElementById("clock-card");
@@ -779,6 +890,7 @@ document.getElementById("btn-calibrate").addEventListener("click", () => {
   offsetNote.style.display = "block";
   offsetNote.textContent = `보정 적용됨 (${offsetSec > 0 ? "+" : ""}${offsetSec}초)`;
   syncToNative();
+  syncToPush();
   tick();
 });
 
