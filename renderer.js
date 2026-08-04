@@ -552,10 +552,16 @@ function urlBase64ToUint8Array(base64String) {
   return arr;
 }
 
-const pushSupported = "serviceWorker" in navigator && "PushManager" in window;
+const pushSupported = !NATIVE && "serviceWorker" in navigator && "PushManager" in window;
 let pushSubscription = null;
 
 async function initPush() {
+  // 맥 네이티브 앱은 자체 백그라운드 알람 엔진이 있으므로 웹 푸시 UI를 숨김
+  if (NATIVE) {
+    const section = document.getElementById("push-section");
+    if (section) section.style.display = "none";
+    return;
+  }
   if (!pushSupported) return;
   try {
     const reg = await navigator.serviceWorker.register("sw.js");
