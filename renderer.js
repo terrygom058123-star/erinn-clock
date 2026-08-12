@@ -273,13 +273,19 @@ setInterval(renderHomework, 60000);
 
 // ─── 교역 ────────────────────────────────────────────────
 // 재료 제작법 (생활스킬별)
+// mats 항목의 q = 결과물 1개를 만들 때 필요한 개수 (미지정 시 1개로 계산)
 const CRAFT_RECIPES = {
   // 제련
   "동판":        { skill: "제련", mats: ["동괴"] },
   "은판":        { skill: "제련", mats: ["은괴"] },
   "금판":        { skill: "제련", mats: ["금괴"] },
   "미스릴판":     { skill: "제련", mats: ["미스릴괴"] },
-  "미스릴 대못":  { skill: "제련", mats: ["미스릴괴"] },
+  "미스릴 대못":  { skill: "제련", mats: [{ n: "미스릴괴", q: 20 }] },
+  // 광석 → 괴 (조각 5개 = 괴 1개)
+  "동괴":       { skill: "제련", mats: [{ n: "동광석 조각", q: 5 }] },
+  "은괴":       { skill: "제련", mats: [{ n: "은광석 조각", q: 5 }] },
+  "금괴":       { skill: "제련", mats: [{ n: "금광석 조각", q: 5 }] },
+  "미스릴괴":    { skill: "제련", mats: [{ n: "미스릴 조각", q: 5 }] },
   // 포션 제조
   "생명력 500 포션":   { skill: "포션제조", mats: ["생명력 300 포션", "네잎클로버", "물"] },
   "마나 500 포션":     { skill: "포션제조", mats: ["마나 300 포션", "네잎클로버", "물"] },
@@ -383,6 +389,7 @@ const TRADE_POSTS = [
 let tradeState = JSON.parse(localStorage.getItem("erinn-trade") || "{}");
 let tradePost  = localStorage.getItem("erinn-trade-post") || TRADE_POSTS[0].id;
 let tradeOpen  = {};   // 펼쳐진 티어
+let tradeRemainOnly = localStorage.getItem("erinn-trade-remain") === "1";
 function saveTrade() { localStorage.setItem("erinn-trade", JSON.stringify(tradeState)); }
 
 function matKey(postId, tier, matName) { return `${postId}|${tier}|${matName}`; }
@@ -390,6 +397,43 @@ function matCount(postId, tier, matName) { return tradeState[matKey(postId, tier
 function setMatCount(postId, tier, matName, v, max) {
   tradeState[matKey(postId, tier, matName)] = Math.max(0, Math.min(max, v));
   saveTrade();
+}
+
+// 레시피 재료 정규화 ("동괴" → {n:"동괴", q:1})
+function recipeMats(name) {
+  const rc = CRAFT_RECIPES[name];
+  if (!rc) return null;
+  return rc.mats.map(m => (typeof m === "string" ? { n: m, q: 1 } : { n: m.n, q: m.q || 1 }));
+}
+
+// 필요한 개수만큼 하위 재료를 계산 (1단계)
+function directMats(name, need) {
+  const mats = recipeMats(name);
+  if (!mats) return null;
+  return mats.map(m => ({ n: m.n, q: m.q * need }));
+}
+
+// 더 이상 제작할 수 없는 원재료까지 재귀 전개
+function expandToRaw(name, need, out = {}, depth = 0) {
+  const mats = recipeMats(name);
+  if (!mats || depth > 8) {
+    out[name] = (out[name] || 0) + need;
+    return out;
+  }
+  mats.forEach(m => expandToRaw(m.n, m.q * need, out, depth + 1));
+  return out;
+}
+
+// 교역소 전체 원재료 합계 (onlyRemaining이면 아직 안 모은 만큼만)
+function postRawTotals(post, onlyRemaining) {
+  const out = {};
+  post.tiers.forEach(ti => ti.mats.forEach(m => {
+    const need = onlyRemaining
+      ? Math.max(0, m.q - matCount(post.id, ti.t, m.n))
+      : m.q;
+    if (need > 0) expandToRaw(m.n, need, out);
+  }));
+  return out;
 }
 
 // 교역소 전체 진행률 (재료 종류 기준 완료 개수)
@@ -436,9 +480,20 @@ function renderTrade() {
       const done = cur >= m.q;
       const pct = Math.min(100, Math.round((cur / m.q) * 100));
       const rc = CRAFT_RECIPES[m.n];
-      const recipe = rc
-        ? `<div class="tr-mat-recipe"><span class="rc-skill">${rc.skill} ·</span> ${rc.mats.join(", ")}</div>`
-        : `<div class="tr-mat-recipe"><span class="rc-skill">직접 수급</span></div>`;
+      let recipe;
+      if (rc) {
+        const dir = directMats(m.n, m.q);
+        const dirStr = dir.map(d => `${d.n} ${d.q.toLocaleString()}개`).join(", ");
+        const raw = expandToRaw(m.n, m.q);
+        const rawStr = Object.entries(raw).map(([n, q]) => `${n} ${q.toLocaleString()}개`).join(", ");
+        recipe = `<div class="tr-mat-recipe"><span class="rc-skill">${rc.skill} ·</span> ${dirStr}</div>`;
+        // 한 단계 더 들어가는 재료가 있으면 원재료 총량도 표시
+        if (rawStr !== dirStr) {
+          recipe += `<div class="tr-mat-raw"><span class="rc-skill">원재료 ·</span> ${rawStr}</div>`;
+        }
+      } else {
+        recipe = `<div class="tr-mat-recipe"><span class="rc-skill">직접 수급</span></div>`;
+      }
       return `
       <div class="tr-mat ${done ? "done" : ""}">
         <div class="tr-mat-head">
@@ -473,6 +528,33 @@ function renderTrade() {
       <div class="tier-body">${matsHtml}</div>
     </div>`;
   }).join("");
+
+  // ─ 원재료 총합 카드 ─
+  const totals = postRawTotals(post, tradeRemainOnly);
+  const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  const sumHtml = `
+  <div class="raw-total">
+    <div class="raw-head">
+      <div>
+        <div class="raw-title">📦 원재료 총 필요량</div>
+        <div class="raw-sub">${post.icon} ${post.name} · 재료 ${rows.length}종</div>
+      </div>
+      <button class="raw-toggle ${tradeRemainOnly ? "on" : ""}" id="btn-raw-toggle">
+        ${tradeRemainOnly ? "남은 것만" : "전체"}
+      </button>
+    </div>
+    ${rows.length === 0
+      ? `<div class="raw-empty">모든 재료를 다 모았어요! 🎉</div>`
+      : `<div class="raw-list">${rows.map(([n, q]) =>
+          `<div class="raw-row"><span>${n}</span><b>${q.toLocaleString()}개</b></div>`).join("")}</div>`}
+  </div>`;
+  tiersEl.insertAdjacentHTML("beforeend", sumHtml);
+
+  document.getElementById("btn-raw-toggle")?.addEventListener("click", () => {
+    tradeRemainOnly = !tradeRemainOnly;
+    localStorage.setItem("erinn-trade-remain", tradeRemainOnly ? "1" : "0");
+    renderTrade();
+  });
 
   // 티어 펼치기/접기
   tiersEl.querySelectorAll(".tier-head").forEach(head => {
