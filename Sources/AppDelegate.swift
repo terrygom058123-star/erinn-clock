@@ -1,7 +1,7 @@
 import AppKit
 import WebKit
 
-class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
+class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKUIDelegate {
     var window: NSWindow!
     var webView: WKWebView!
 
@@ -57,6 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
 
         webView = WKWebView(frame: window.contentView!.bounds, configuration: config)
         webView.autoresizingMask = [.width, .height]
+        webView.uiDelegate = self   // JS alert/confirm 동작에 필요
 
         if let htmlURL = Bundle.module.url(forResource: "index", withExtension: "html") {
             let resourceURL = htmlURL.deletingLastPathComponent()
@@ -355,6 +356,32 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler {
         miniTasks = tasksField
         miniStack = stack
         engineTick()  // 즉시 1회 갱신
+    }
+
+    // ─── JS alert / confirm 지원 (WKUIDelegate) ───
+    func webView(_ webView: WKWebView,
+                 runJavaScriptAlertPanelWithMessage message: String,
+                 initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping () -> Void) {
+        let alert = NSAlert()
+        alert.messageText = "마비노기 에린시계"
+        alert.informativeText = message
+        alert.addButton(withTitle: "확인")
+        alert.beginSheetModal(for: window) { _ in completionHandler() }
+    }
+
+    func webView(_ webView: WKWebView,
+                 runJavaScriptConfirmPanelWithMessage message: String,
+                 initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping (Bool) -> Void) {
+        let alert = NSAlert()
+        alert.messageText = "마비노기 에린시계"
+        alert.informativeText = message
+        alert.addButton(withTitle: "확인")
+        alert.addButton(withTitle: "취소")
+        alert.beginSheetModal(for: window) { resp in
+            completionHandler(resp == .alertFirstButtonReturn)
+        }
     }
 
     func playSound() {

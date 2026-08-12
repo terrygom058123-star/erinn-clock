@@ -271,6 +271,253 @@ renderHomework();
 // 1분마다 리셋 시점 체크
 setInterval(renderHomework, 60000);
 
+// ─── 교역 ────────────────────────────────────────────────
+// 재료 제작법 (생활스킬별)
+const CRAFT_RECIPES = {
+  // 제련
+  "동판":        { skill: "제련", mats: ["동괴"] },
+  "은판":        { skill: "제련", mats: ["은괴"] },
+  "금판":        { skill: "제련", mats: ["금괴"] },
+  "미스릴판":     { skill: "제련", mats: ["미스릴괴"] },
+  "미스릴 대못":  { skill: "제련", mats: ["미스릴괴"] },
+  // 포션 제조
+  "생명력 500 포션":   { skill: "포션제조", mats: ["생명력 300 포션", "네잎클로버", "물"] },
+  "마나 500 포션":     { skill: "포션제조", mats: ["마나 300 포션", "네잎클로버", "물"] },
+  "스태미너 500 포션": { skill: "포션제조", mats: ["스태미너 300 포션", "네잎클로버", "물"] },
+  "마리오네트 500 포션": { skill: "포션제조", mats: ["골드 허브", "베이스 포션", "아연 광석조각", "주석 광석조각", "니켈 광석조각"] },
+  "정령의 리큐르":     { skill: "포션제조", mats: ["화이트 허브", "고대정령 화석조각", "엘레멘탈 리무버"] },
+  // 방직
+  "고급 옷감":     { skill: "방직", mats: ["굵은 실"] },
+  "최고급 옷감":   { skill: "방직", mats: ["굵은 실"] },
+  "고급 실크":     { skill: "방직", mats: ["가는 실"] },
+  "최고급 실크":   { skill: "방직", mats: ["가는 실"] },
+  "고급 가죽끈":   { skill: "방직", mats: ["고급 가죽"] },
+  "최고급 가죽끈": { skill: "방직", mats: ["최고급 가죽"] },
+  "질긴 실":       { skill: "방직", mats: ["가는 실"] },
+  "질긴 끈":       { skill: "방직", mats: ["굵은 실"] },
+  "매듭끈":        { skill: "방직", mats: ["가는 실", "굵은 실"] },
+  "튼튼한 고리":   { skill: "방직", mats: ["매듭끈", "어둠이 깃든 칼날 조각"] },
+  // 필기구 크래프트
+  "마법의 깃털펜": { skill: "필기구", mats: ["생기있는 깃털", "마나 허브", "골드 허브"] },
+  "마법의 양피지": { skill: "필기구", mats: ["부드러운 양피지", "마나 허브", "선라이트 허브"] },
+  // 핀즈 크래프트
+  "코스모스 퍼퓸": { skill: "핀즈", mats: ["빈 병", "마법가루", "베이스 허브", "코스모스 추출액"] },
+  "펫 놀이세트":   { skill: "핀즈", mats: ["펫 잡동사니", "나무판"] },
+  // 풍차 (티르코네일)
+  "밀가루":   { skill: "풍차(티르코네일)", mats: ["밀"] },
+  "보릿가루": { skill: "풍차(티르코네일)", mats: ["보리"] },
+  // 매직 크래프트
+  "실리엔":            { skill: "매직크래프트", mats: ["실리엔 결정"] },
+  "신비한 허브가루":    { skill: "매직크래프트", mats: ["블러디 허브", "마나 허브", "포이즌 허브"] },
+  "끈끈이 풀":         { skill: "매직크래프트", mats: ["실리엔", "돌연변이 식물 점액질"] },
+  "마력이 깃든 장작":   { skill: "매직크래프트", mats: ["실리엔", "힐웬", "중급 나무장작"] },
+  "정화된 토끼의 발":   { skill: "매직크래프트", mats: ["실리엔", "돌연변이 토끼발"] },
+  "뮤턴트":            { skill: "매직크래프트", mats: ["돌연변이 토끼발", "돌연변이 식물 점액질", "사스콰치의 심장"] },
+  // 힐웬공학
+  "힐웬 합금":      { skill: "힐웬공학", mats: ["무른 힐웬 광석 조각"] },
+  "에메랄드 퓨즈":  { skill: "힐웬공학", mats: ["에메랄드 코어"] },
+  "에너지 컨버터":  { skill: "힐웬공학", mats: ["힐웬", "실리엔"] },
+  "에너지 증폭 장치": { skill: "힐웬공학", mats: ["에메랄드 코어", "에너지 컨버터"] },
+  "스핀 기어":      { skill: "힐웬공학", mats: ["힐웬", "육각볼트", "육각너트"] },
+  // 핸디크래프트
+  "발리스타용 독 묻은 와이번 볼트": { skill: "핸디크래프트", mats: ["나무장작", "와이번의 발톱", "포이즌 포션"] },
+  "쿠션용 솜":        { skill: "핸디크래프트", mats: ["고급 양털", "가는 실"] },
+  "인조 잔디":        { skill: "핸디크래프트", mats: ["싱싱한 풀", "꽃뭉치"] },
+  "건초 더미":        { skill: "핸디크래프트", mats: ["못쓰게 된 밀", "최고급 가죽끈"] },
+  "최고급 바닐라향초": { skill: "핸디크래프트", mats: ["고급 바닐라향초", "정제된 촉매제"] },
+  // 목공
+  "중급 나무장작":   { skill: "목공", mats: ["나무장작"] },
+  "고급 나무장작":   { skill: "목공", mats: ["중급 나무장작"] },
+  "최고급 나무장작": { skill: "목공", mats: ["고급 나무장작"] },
+  "특급 나무장작":   { skill: "목공", mats: ["최고급 나무장작", "순도 높은 강화제"] },
+  // 합성
+  "빤짝이 종이": { skill: "합성", mats: ["종이", "작은 녹색구슬", "작은 파란구슬", "작은 빨간구슬", "작은 은색구슬"] },
+  // 요리(반죽)
+  "새우 조련미끼": { skill: "요리(반죽)", mats: ["새우", "설탕", "마늘"] },
+};
+
+// 교역소별 준비물
+const TRADE_POSTS = [
+  {
+    id: "jardin", name: "자르딘 해변", icon: "🏖️",
+    tiers: [
+      { t: 1, name: "화산머드팩",       qty: 25, mats: [{ n: "동판", q: 50 }, { n: "신비한 허브가루", q: 75 }] },
+      { t: 2, name: "마그마스톤",       qty: 15, mats: [{ n: "미스릴판", q: 30 }, { n: "보릿가루", q: 45 }] },
+      { t: 3, name: "익시온의 뿔",      qty: 10, mats: [{ n: "마리오네트 500 포션", q: 30 }, { n: "금판", q: 50 }] },
+      { t: 4, name: "화산도마뱀의 알",   qty: 8,  mats: [{ n: "빤짝이 종이", q: 40 }, { n: "최고급 옷감", q: 40 }, { n: "생명력 500 포션", q: 16 }] },
+      { t: 5, name: "라스파 흑표범 가죽", qty: 3,  mats: [{ n: "뮤턴트", q: 3 }, { n: "코스모스 퍼퓸", q: 6 }, { n: "특급 나무장작", q: 9 }] },
+    ],
+  },
+  {
+    id: "karu", name: "카루숲 남쪽", icon: "🌲",
+    tiers: [
+      { t: 1, name: "우드테이블",        qty: 25, mats: [{ n: "새우 조련미끼", q: 100 }, { n: "실리엔", q: 50 }] },
+      { t: 2, name: "목공예품",          qty: 15, mats: [{ n: "마법의 양피지", q: 15 }, { n: "질긴 끈", q: 30 }] },
+      { t: 3, name: "스톤 홀스 조각상",   qty: 10, mats: [{ n: "힐웬 합금", q: 20 }, { n: "밀가루", q: 50 }] },
+      { t: 4, name: "카루 표고버섯",      qty: 8,  mats: [{ n: "스핀 기어", q: 8 }, { n: "중급 나무장작", q: 40 }, { n: "고급 실크", q: 32 }] },
+      { t: 5, name: "조개 껍질화석",      qty: 3,  mats: [{ n: "에너지 증폭 장치", q: 6 }, { n: "튼튼한 고리", q: 3 }, { n: "마법의 깃털펜", q: 15 }] },
+    ],
+  },
+  {
+    id: "oasis", name: "오아시스", icon: "🏜️",
+    tiers: [
+      { t: 1, name: "고운모래",          qty: 25, mats: [{ n: "스태미너 500 포션", q: 75 }, { n: "매듭끈", q: 50 }] },
+      { t: 2, name: "프리즌고스트 날개",  qty: 15, mats: [{ n: "쿠션용 솜", q: 15 }, { n: "최고급 실크", q: 30 }] },
+      { t: 3, name: "오아시스 그림",      qty: 10, mats: [{ n: "최고급 가죽끈", q: 10 }, { n: "질긴 실", q: 30 }] },
+      { t: 4, name: "선인장 꽃",         qty: 8,  mats: [{ n: "정령의 리큐르", q: 8 }, { n: "은판", q: 16 }, { n: "고급 옷감", q: 32 }] },
+      { t: 5, name: "거대 송곳니 화석",   qty: 3,  mats: [{ n: "펫 놀이세트", q: 3 }, { n: "건초 더미", q: 9 }, { n: "마력이 깃든 장작", q: 15 }] },
+    ],
+  },
+  {
+    id: "calida", name: "칼리다", icon: "♨️",
+    tiers: [
+      { t: 1, name: "맥반석 계란",   qty: 25, mats: [{ n: "마나 500 포션", q: 25 }, { n: "고급 나무장작", q: 50 }] },
+      { t: 2, name: "칼리다 연어",   qty: 15, mats: [{ n: "에너지 컨버터", q: 15 }, { n: "정화된 토끼의 발", q: 15 }] },
+      { t: 3, name: "온전입욕제",    qty: 10, mats: [{ n: "끈끈이 풀", q: 30 }, { n: "최고급 바닐라향초", q: 20 }] },
+      { t: 4, name: "대형 캠핑텐트",  qty: 8,  mats: [{ n: "인조 잔디", q: 8 }, { n: "에메랄드 퓨즈", q: 8 }, { n: "고급 가죽끈", q: 40 }] },
+      { t: 5, name: "핑크 솔트",     qty: 3,  mats: [{ n: "미스릴 대못", q: 9 }, { n: "발리스타용 독 묻은 와이번 볼트", q: 9 }, { n: "최고급 나무장작", q: 9 }] },
+    ],
+  },
+];
+
+let tradeState = JSON.parse(localStorage.getItem("erinn-trade") || "{}");
+let tradePost  = localStorage.getItem("erinn-trade-post") || TRADE_POSTS[0].id;
+let tradeOpen  = {};   // 펼쳐진 티어
+function saveTrade() { localStorage.setItem("erinn-trade", JSON.stringify(tradeState)); }
+
+function matKey(postId, tier, matName) { return `${postId}|${tier}|${matName}`; }
+function matCount(postId, tier, matName) { return tradeState[matKey(postId, tier, matName)] || 0; }
+function setMatCount(postId, tier, matName, v, max) {
+  tradeState[matKey(postId, tier, matName)] = Math.max(0, Math.min(max, v));
+  saveTrade();
+}
+
+// 교역소 전체 진행률 (재료 종류 기준 완료 개수)
+function postProgress(post) {
+  let done = 0, total = 0;
+  post.tiers.forEach(ti => ti.mats.forEach(m => {
+    total++;
+    if (matCount(post.id, ti.t, m.n) >= m.q) done++;
+  }));
+  return { done, total };
+}
+
+function renderTrade() {
+  const postsEl = document.getElementById("trade-posts");
+  const tiersEl = document.getElementById("trade-tiers");
+  if (!postsEl) return;
+
+  // 교역소 선택 버튼
+  postsEl.innerHTML = TRADE_POSTS.map(p => {
+    const pr = postProgress(p);
+    return `<button class="trade-post-btn ${p.id === tradePost ? "active" : ""}" data-post="${p.id}">
+      ${p.icon} ${p.name}
+      <span class="tp-prog">${pr.done}/${pr.total} 완료</span>
+    </button>`;
+  }).join("");
+
+  postsEl.querySelectorAll(".trade-post-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      tradePost = btn.dataset.post;
+      localStorage.setItem("erinn-trade-post", tradePost);
+      renderTrade();
+    });
+  });
+
+  // 티어 목록
+  const post = TRADE_POSTS.find(p => p.id === tradePost) || TRADE_POSTS[0];
+  tiersEl.innerHTML = post.tiers.map(ti => {
+    const doneCnt = ti.mats.filter(m => matCount(post.id, ti.t, m.n) >= m.q).length;
+    const allDone = doneCnt === ti.mats.length;
+    const open = !!tradeOpen[`${post.id}|${ti.t}`];
+
+    const matsHtml = ti.mats.map(m => {
+      const cur = matCount(post.id, ti.t, m.n);
+      const done = cur >= m.q;
+      const pct = Math.min(100, Math.round((cur / m.q) * 100));
+      const rc = CRAFT_RECIPES[m.n];
+      const recipe = rc
+        ? `<div class="tr-mat-recipe"><span class="rc-skill">${rc.skill} ·</span> ${rc.mats.join(", ")}</div>`
+        : `<div class="tr-mat-recipe"><span class="rc-skill">직접 수급</span></div>`;
+      return `
+      <div class="tr-mat ${done ? "done" : ""}">
+        <div class="tr-mat-head">
+          <span class="tr-mat-name">${done ? "✅ " : ""}${m.n}</span>
+          <span class="tr-mat-count"><b>${cur}</b> / ${m.q}</span>
+        </div>
+        ${recipe}
+        <div class="tr-bar"><div style="width:${pct}%"></div></div>
+        <div class="tr-ctrl" data-tier="${ti.t}" data-mat="${m.n}" data-max="${m.q}">
+          <button data-d="-10">−10</button>
+          <button data-d="-1">−1</button>
+          <input type="number" inputmode="numeric" value="${cur}" min="0" max="${m.q}">
+          <button data-d="1">+1</button>
+          <button data-d="10">+10</button>
+          <button class="tr-max" data-d="max">완료</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    return `
+    <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-tier="${ti.t}">
+      <div class="tier-head">
+        <div>
+          <div class="tier-title"><span class="t-badge">${ti.t}티어</span>${ti.name}</div>
+          <div class="tier-sub">${ti.qty}개 제출</div>
+        </div>
+        <div class="tier-right">
+          <span class="tier-prog">${doneCnt}/${ti.mats.length}</span>
+          <span class="tier-arrow">▶</span>
+        </div>
+      </div>
+      <div class="tier-body">${matsHtml}</div>
+    </div>`;
+  }).join("");
+
+  // 티어 펼치기/접기
+  tiersEl.querySelectorAll(".tier-head").forEach(head => {
+    head.addEventListener("click", () => {
+      const t = head.closest(".tier-card").dataset.tier;
+      const key = `${post.id}|${t}`;
+      tradeOpen[key] = !tradeOpen[key];
+      renderTrade();
+    });
+  });
+
+  // 수량 조절
+  tiersEl.querySelectorAll(".tr-ctrl").forEach(ctrl => {
+    const tier = parseInt(ctrl.dataset.tier, 10);
+    const mat  = ctrl.dataset.mat;
+    const max  = parseInt(ctrl.dataset.max, 10);
+
+    ctrl.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const d = btn.dataset.d;
+        const cur = matCount(post.id, tier, mat);
+        setMatCount(post.id, tier, mat, d === "max" ? max : cur + parseInt(d, 10), max);
+        renderTrade();
+      });
+    });
+    const input = ctrl.querySelector("input");
+    input.addEventListener("click", e => e.stopPropagation());
+    input.addEventListener("change", () => {
+      setMatCount(post.id, tier, mat, parseInt(input.value, 10) || 0, max);
+      renderTrade();
+    });
+  });
+}
+
+document.getElementById("btn-trade-reset")?.addEventListener("click", () => {
+  const post = TRADE_POSTS.find(p => p.id === tradePost);
+  if (!confirm(`${post.name} 교역소의 수집 기록을 모두 지울까요?`)) return;
+  post.tiers.forEach(ti => ti.mats.forEach(m => { delete tradeState[matKey(post.id, ti.t, m.n)]; }));
+  saveTrade();
+  renderTrade();
+});
+
+renderTrade();
+
 // ─── 탭 전환 ──────────────────────────────────────────────
 function showTab(name) {
   document.querySelectorAll(".tab-panel").forEach(p => {

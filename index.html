@@ -129,6 +129,16 @@
     <div id="hw-weekly"></div>
     <div class="footer-note" style="margin-top:20px">매주 월요일 오전 6시에 자동으로 초기화됩니다</div>
   </div>
+
+  <!-- ═══ 탭: 교역 ═══ -->
+  <div class="tab-panel" id="tab-trade" style="display:none">
+    <div class="alarm-header">
+      <h2>🚢 교역 준비물</h2>
+      <button class="btn-add" id="btn-trade-reset" style="font-size:12px;padding:6px 12px;background:#334155">초기화</button>
+    </div>
+    <div class="trade-posts" id="trade-posts"></div>
+    <div id="trade-tiers"></div>
+  </div>
 </div>
 
 <!-- 하단 탭바 -->
@@ -141,6 +151,9 @@
   </button>
   <button class="tab-btn" data-tab="weekly">
     <span class="tab-ico">📅</span><span>주간</span>
+  </button>
+  <button class="tab-btn" data-tab="trade">
+    <span class="tab-ico">🚢</span><span>교역</span>
   </button>
 </div>
 
