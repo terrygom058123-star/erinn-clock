@@ -199,6 +199,19 @@ body {
 .trade-post-btn .tp-prog { display: block; font-size: 10px; font-weight: 400; color: #64748b; margin-top: 2px; }
 .trade-post-btn.active .tp-prog { color: #818cf8; }
 
+/* 티어별 / 스킬별 보기 전환 */
+.view-toggle { display: flex; gap: 6px; margin-bottom: 12px; }
+.view-toggle button {
+  flex: 1; background: #1e293b; border: 1.5px solid #334155; color: #64748b;
+  border-radius: 10px; padding: 8px 0; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.view-toggle button.on { background: #312e81; border-color: #6366f1; color: #c7d2fe; }
+
+.tr-from {
+  display: inline-block; font-size: 10px; color: #94a3b8;
+  background: #0f172a; border-radius: 5px; padding: 2px 6px; margin-top: 4px;
+}
+
 .tier-card {
   background: #1e293b; border: 1.5px solid #334155;
   border-radius: 14px; margin-bottom: 10px; overflow: hidden;
