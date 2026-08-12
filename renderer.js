@@ -460,8 +460,8 @@ function postProgress(post) {
   return { done, total };
 }
 
-// 재료 한 줄 (티어별 · 스킬별 보기 공용). showTier=true면 어느 티어 것인지 표시
-function matRowHtml(post, ti, m, showTier) {
+// 재료 한 줄 (모든 보기 공용). fromLabel을 주면 출처(교역소·티어)를 배지로 표시
+function matRowHtml(post, ti, m, fromLabel) {
   const cur = matCount(post.id, ti.t, m.n);
   const done = cur >= m.q;
   const pct = Math.min(100, Math.round((cur / m.q) * 100));
@@ -485,8 +485,7 @@ function matRowHtml(post, ti, m, showTier) {
     recipe = `<div class="tr-mat-recipe"><span class="rc-skill">직접 수급</span></div>`;
   }
 
-  const tierTag = showTier
-    ? `<div class="tr-from">${ti.t}티어 · ${ti.name}</div>` : "";
+  const tierTag = fromLabel ? `<div class="tr-from">${fromLabel}</div>` : "";
 
   return `
   <div class="tr-mat ${done ? "done" : ""}">
@@ -497,7 +496,7 @@ function matRowHtml(post, ti, m, showTier) {
     ${tierTag}
     ${recipe}
     <div class="tr-bar"><div style="width:${pct}%"></div></div>
-    <div class="tr-ctrl" data-tier="${ti.t}" data-mat="${m.n}" data-max="${m.q}">
+    <div class="tr-ctrl" data-post="${post.id}" data-tier="${ti.t}" data-mat="${m.n}" data-max="${m.q}">
       <button data-d="-10">−10</button>
       <button data-d="-1">−1</button>
       <input type="number" inputmode="numeric" value="${cur}" min="0" max="${m.q}">
@@ -517,14 +516,25 @@ const SKILL_ICON = {
   "필기구 크래프트": "🖋️", "핀즈 크래프트": "🎀", "합성": "🔮", "요리": "🍳", "직접 수급": "📦",
 };
 
-// 스킬별로 재료 묶기
-function groupBySkill(post) {
+// 스킬별로 재료 묶기 (posts 배열을 주면 여러 교역소를 통합)
+function groupBySkill(posts) {
+  const list = Array.isArray(posts) ? posts : [posts];
   const groups = {};
-  post.tiers.forEach(ti => ti.mats.forEach(m => {
+  list.forEach(post => post.tiers.forEach(ti => ti.mats.forEach(m => {
     const skill = CRAFT_RECIPES[m.n]?.skill || "직접 수급";
-    (groups[skill] = groups[skill] || []).push({ ti, m });
-  }));
+    (groups[skill] = groups[skill] || []).push({ post, ti, m });
+  })));
   return SKILL_ORDER.filter(s => groups[s]).map(s => ({ skill: s, items: groups[s] }));
+}
+
+// 여러 교역소 원재료 합계
+function allRawTotals(onlyRemaining) {
+  const out = {};
+  TRADE_POSTS.forEach(post => post.tiers.forEach(ti => ti.mats.forEach(m => {
+    const need = onlyRemaining ? Math.max(0, m.q - matCount(post.id, ti.t, m.n)) : m.q;
+    if (need > 0) expandToRaw(m.n, need, out);
+  })));
+  return out;
 }
 
 function renderTrade() {
@@ -532,7 +542,8 @@ function renderTrade() {
   const tiersEl = document.getElementById("trade-tiers");
   if (!postsEl) return;
 
-  // 교역소 선택 버튼
+  // 교역소 선택 버튼 (전체 통합 보기에서는 숨김)
+  postsEl.style.display = tradeView === "all" ? "none" : "flex";
   postsEl.innerHTML = TRADE_POSTS.map(p => {
     const pr = postProgress(p);
     return `<button class="trade-post-btn ${p.id === tradePost ? "active" : ""}" data-post="${p.id}">
@@ -551,20 +562,51 @@ function renderTrade() {
 
   const post = TRADE_POSTS.find(p => p.id === tradePost) || TRADE_POSTS[0];
 
-  // 보기 전환 (티어별 / 스킬별)
+  // 보기 전환 (티어별 / 스킬별 / 전체 통합)
   let html = `
   <div class="view-toggle">
     <button class="${tradeView === "tier" ? "on" : ""}" data-view="tier">티어별</button>
     <button class="${tradeView === "skill" ? "on" : ""}" data-view="skill">스킬별</button>
+    <button class="${tradeView === "all" ? "on" : ""}" data-view="all">전체 통합</button>
   </div>`;
 
-  if (tradeView === "skill") {
+  if (tradeView === "all") {
+    // ── 전체 통합: 교역소 구분 없이 스킬별로 모두 모아 보기 ──
+    const groups = groupBySkill(TRADE_POSTS);
+    const totalMats = groups.reduce((s, g) => s + g.items.length, 0);
+    const totalDone = groups.reduce((s, g) =>
+      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length, 0);
+
+    html += `<div class="all-summary">🚢 교역소 4곳 전체 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료</div>`;
+    html += groups.map(g => {
+      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length;
+      const allDone = doneCnt === g.items.length;
+      const open = tradeOpen[`all|skill|${g.skill}`] !== false;   // 기본 펼침
+      const rows = g.items
+        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`))
+        .join("");
+      return `
+      <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-skill="${g.skill}" data-all="1">
+        <div class="tier-head">
+          <div>
+            <div class="tier-title"><span class="t-badge">${SKILL_ICON[g.skill] || "🔧"}</span>${g.skill}</div>
+            <div class="tier-sub">재료 ${g.items.length}종</div>
+          </div>
+          <div class="tier-right">
+            <span class="tier-prog">${doneCnt}/${g.items.length}</span>
+            <span class="tier-arrow">▶</span>
+          </div>
+        </div>
+        <div class="tier-body">${rows}</div>
+      </div>`;
+    }).join("");
+  } else if (tradeView === "skill") {
     // ── 스킬별 보기: 제련은 제련끼리, 요리는 요리끼리 ──
     html += groupBySkill(post).map(g => {
       const doneCnt = g.items.filter(({ ti, m }) => matCount(post.id, ti.t, m.n) >= m.q).length;
       const allDone = doneCnt === g.items.length;
       const open = tradeOpen[`${post.id}|skill|${g.skill}`] !== false;  // 스킬별은 기본 펼침
-      const rows = g.items.map(({ ti, m }) => matRowHtml(post, ti, m, true)).join("");
+      const rows = g.items.map(({ ti, m }) => matRowHtml(post, ti, m, `${ti.t}티어 · ${ti.name}`)).join("");
       return `
       <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-skill="${g.skill}">
         <div class="tier-head">
@@ -586,7 +628,7 @@ function renderTrade() {
       const doneCnt = ti.mats.filter(m => matCount(post.id, ti.t, m.n) >= m.q).length;
       const allDone = doneCnt === ti.mats.length;
       const open = !!tradeOpen[`${post.id}|${ti.t}`];
-      const rows = ti.mats.map(m => matRowHtml(post, ti, m, false)).join("");
+      const rows = ti.mats.map(m => matRowHtml(post, ti, m, null)).join("");
       return `
       <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-tier="${ti.t}">
         <div class="tier-head">
@@ -614,14 +656,16 @@ function renderTrade() {
   });
 
   // ─ 원재료 총합 카드 ─
-  const totals = postRawTotals(post, tradeRemainOnly);
+  const isAll  = tradeView === "all";
+  const totals = isAll ? allRawTotals(tradeRemainOnly) : postRawTotals(post, tradeRemainOnly);
   const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  const sumLabel = isAll ? "🚢 교역소 4곳 전체" : `${post.icon} ${post.name}`;
   const sumHtml = `
   <div class="raw-total">
     <div class="raw-head">
       <div>
         <div class="raw-title">📦 원재료 총 필요량</div>
-        <div class="raw-sub">${post.icon} ${post.name} · 재료 ${rows.length}종</div>
+        <div class="raw-sub">${sumLabel} · 재료 ${rows.length}종</div>
       </div>
       <button class="raw-toggle ${tradeRemainOnly ? "on" : ""}" id="btn-raw-toggle">
         ${tradeRemainOnly ? "남은 것만" : "전체"}
@@ -645,7 +689,8 @@ function renderTrade() {
     head.addEventListener("click", () => {
       const card = head.closest(".tier-card");
       if (card.dataset.skill) {
-        const key = `${post.id}|skill|${card.dataset.skill}`;
+        const scope = card.dataset.all ? "all" : post.id;
+        const key = `${scope}|skill|${card.dataset.skill}`;
         tradeOpen[key] = tradeOpen[key] === false;   // 기본 펼침이라 반대로
       } else {
         const key = `${post.id}|${card.dataset.tier}`;
@@ -657,6 +702,7 @@ function renderTrade() {
 
   // 수량 조절
   tiersEl.querySelectorAll(".tr-ctrl").forEach(ctrl => {
+    const pid  = ctrl.dataset.post;               // 전체 통합 보기에서도 정확한 교역소로 저장
     const tier = parseInt(ctrl.dataset.tier, 10);
     const mat  = ctrl.dataset.mat;
     const max  = parseInt(ctrl.dataset.max, 10);
@@ -665,24 +711,30 @@ function renderTrade() {
       btn.addEventListener("click", e => {
         e.stopPropagation();
         const d = btn.dataset.d;
-        const cur = matCount(post.id, tier, mat);
-        setMatCount(post.id, tier, mat, d === "max" ? max : cur + parseInt(d, 10), max);
+        const cur = matCount(pid, tier, mat);
+        setMatCount(pid, tier, mat, d === "max" ? max : cur + parseInt(d, 10), max);
         renderTrade();
       });
     });
     const input = ctrl.querySelector("input");
     input.addEventListener("click", e => e.stopPropagation());
     input.addEventListener("change", () => {
-      setMatCount(post.id, tier, mat, parseInt(input.value, 10) || 0, max);
+      setMatCount(pid, tier, mat, parseInt(input.value, 10) || 0, max);
       renderTrade();
     });
   });
 }
 
 document.getElementById("btn-trade-reset")?.addEventListener("click", () => {
-  const post = TRADE_POSTS.find(p => p.id === tradePost);
-  if (!confirm(`${post.name} 교역소의 수집 기록을 모두 지울까요?`)) return;
-  post.tiers.forEach(ti => ti.mats.forEach(m => { delete tradeState[matKey(post.id, ti.t, m.n)]; }));
+  // 전체 통합 보기에서는 4곳 모두, 아니면 현재 교역소만 초기화
+  const targets = tradeView === "all"
+    ? TRADE_POSTS
+    : [TRADE_POSTS.find(p => p.id === tradePost)];
+  const label = tradeView === "all" ? "교역소 4곳 전체" : `${targets[0].name} 교역소`;
+  if (!confirm(`${label}의 수집 기록을 모두 지울까요?`)) return;
+  targets.forEach(p => p.tiers.forEach(ti => ti.mats.forEach(m => {
+    delete tradeState[matKey(p.id, ti.t, m.n)];
+  })));
   saveTrade();
   renderTrade();
 });
