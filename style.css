@@ -206,7 +206,8 @@ body {
   border-radius: 10px; padding: 8px 0; font-size: 13px; font-weight: 600; cursor: pointer;
 }
 .view-toggle button.on { background: #312e81; border-color: #6366f1; color: #c7d2fe; }
-.view-toggle button { font-size: 12px; padding: 8px 2px; }
+.view-toggle { gap: 4px; }
+.view-toggle button { font-size: 11.5px; padding: 8px 1px; white-space: nowrap; }
 
 .all-summary {
   background: #172554; border: 1.5px solid #1e40af; color: #bfdbfe;
