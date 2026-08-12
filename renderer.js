@@ -537,6 +537,27 @@ function allRawTotals(onlyRemaining) {
   return out;
 }
 
+// 원재료 총합을 생활스킬 영역별로 나눠서 계산
+// (해당 재료를 만드는 스킬 기준 — 제련용 원재료는 제련 아래에 모임)
+function rawTotalsBySkill(posts, onlyRemaining) {
+  const list = Array.isArray(posts) ? posts : [posts];
+  const bySkill = {};
+  const distinct = new Set();
+  list.forEach(post => post.tiers.forEach(ti => ti.mats.forEach(m => {
+    const need = onlyRemaining ? Math.max(0, m.q - matCount(post.id, ti.t, m.n)) : m.q;
+    if (need <= 0) return;
+    const skill = CRAFT_RECIPES[m.n]?.skill || "직접 수급";
+    bySkill[skill] = bySkill[skill] || {};
+    expandToRaw(m.n, need, bySkill[skill]);
+  })));
+  Object.values(bySkill).forEach(o => Object.keys(o).forEach(k => distinct.add(k)));
+  const groups = SKILL_ORDER.filter(s => bySkill[s]).map(s => ({
+    skill: s,
+    rows: Object.entries(bySkill[s]).sort((a, b) => b[1] - a[1]),
+  }));
+  return { groups, distinctCount: distinct.size };
+}
+
 function renderTrade() {
   const postsEl = document.getElementById("trade-posts");
   const tiersEl = document.getElementById("trade-tiers");
@@ -655,26 +676,40 @@ function renderTrade() {
     });
   });
 
-  // ─ 원재료 총합 카드 ─
-  const isAll  = tradeView === "all";
-  const totals = isAll ? allRawTotals(tradeRemainOnly) : postRawTotals(post, tradeRemainOnly);
-  const rows = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  // ─ 원재료 총합 카드 (생활스킬 영역별) ─
+  const isAll = tradeView === "all";
+  const { groups: rawGroups, distinctCount } =
+    rawTotalsBySkill(isAll ? TRADE_POSTS : post, tradeRemainOnly);
   const sumLabel = isAll ? "🚢 교역소 4곳 전체" : `${post.icon} ${post.name}`;
+  // 여러 영역에 걸쳐 쓰이는 원재료 찾기 (안내용)
+  const seenIn = {};
+  rawGroups.forEach(g => g.rows.forEach(([n]) => { seenIn[n] = (seenIn[n] || 0) + 1; }));
+  const dupNames = Object.entries(seenIn).filter(([, c]) => c > 1).map(([n]) => n);
   const sumHtml = `
   <div class="raw-total">
     <div class="raw-head">
       <div>
         <div class="raw-title">📦 원재료 총 필요량</div>
-        <div class="raw-sub">${sumLabel} · 재료 ${rows.length}종</div>
+        <div class="raw-sub">${sumLabel} · 재료 ${distinctCount}종</div>
       </div>
       <button class="raw-toggle ${tradeRemainOnly ? "on" : ""}" id="btn-raw-toggle">
         ${tradeRemainOnly ? "남은 것만" : "전체"}
       </button>
     </div>
-    ${rows.length === 0
+    ${rawGroups.length === 0
       ? `<div class="raw-empty">모든 재료를 다 모았어요! 🎉</div>`
-      : `<div class="raw-list">${rows.map(([n, q]) =>
-          `<div class="raw-row"><span>${n}</span><b>${q.toLocaleString()}개</b></div>`).join("")}</div>`}
+      : rawGroups.map(g => `
+        <div class="raw-group">
+          <div class="raw-group-head">
+            <span>${SKILL_ICON[g.skill] || "🔧"} ${g.skill}</span>
+            <span class="raw-group-n">${g.rows.length}종</span>
+          </div>
+          <div class="raw-list">${g.rows.map(([n, q]) =>
+            `<div class="raw-row"><span>${n}</span><b>${q.toLocaleString()}개</b></div>`).join("")}</div>
+        </div>`).join("")}
+    ${dupNames.length
+      ? `<div class="raw-note">※ ${dupNames.slice(0, 3).join(", ")}${dupNames.length > 3 ? " 등" : ""}은 여러 영역에서 쓰여 나뉘어 표시됩니다 (합치면 총량)</div>`
+      : ""}
   </div>`;
   tiersEl.insertAdjacentHTML("beforeend", sumHtml);
 
