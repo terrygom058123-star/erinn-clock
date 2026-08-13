@@ -401,7 +401,8 @@ let tradeState = JSON.parse(localStorage.getItem("erinn-trade") || "{}");
 let tradePost  = localStorage.getItem("erinn-trade-post") || TRADE_POSTS[0].id;
 let tradeOpen  = {};   // 펼쳐진 티어
 let tradeRemainOnly = localStorage.getItem("erinn-trade-remain") === "1";
-let tradeView = localStorage.getItem("erinn-trade-view") || "tier";   // tier | skill
+let tradeView = localStorage.getItem("erinn-trade-view") || "who";   // who | all | tier
+if (tradeView === "skill") tradeView = "who";   // 스킬별 보기는 없어짐
 function saveTrade() { localStorage.setItem("erinn-trade", JSON.stringify(tradeState)); }
 
 function matKey(postId, tier, matName) { return `${postId}|${tier}|${matName}`; }
@@ -631,10 +632,9 @@ function renderTrade() {
   // 보기 전환 (티어별 / 스킬별 / 전체 통합)
   let html = `
   <div class="view-toggle">
-    <button class="${tradeView === "tier" ? "on" : ""}" data-view="tier">티어별</button>
-    <button class="${tradeView === "skill" ? "on" : ""}" data-view="skill">스킬별</button>
-    <button class="${tradeView === "all" ? "on" : ""}" data-view="all">전체 통합</button>
     <button class="${tradeView === "who" ? "on" : ""}" data-view="who">담당별</button>
+    <button class="${tradeView === "all" ? "on" : ""}" data-view="all">전체 통합</button>
+    <button class="${tradeView === "tier" ? "on" : ""}" data-view="tier">무역시작</button>
   </div>`;
 
   if (tradeView === "who") {
@@ -704,30 +704,8 @@ function renderTrade() {
         <div class="tier-body">${rows}</div>
       </div>`;
     }).join("");
-  } else if (tradeView === "skill") {
-    // ── 스킬별 보기: 제련은 제련끼리, 요리는 요리끼리 ──
-    html += groupBySkill(post).map(g => {
-      const doneCnt = g.items.filter(({ ti, m }) => matCount(post.id, ti.t, m.n) >= m.q).length;
-      const allDone = doneCnt === g.items.length;
-      const open = tradeOpen[`${post.id}|skill|${g.skill}`] !== false;  // 스킬별은 기본 펼침
-      const rows = g.items.map(({ ti, m }) => matRowHtml(post, ti, m, `${ti.t}티어 · ${ti.name}`)).join("");
-      return `
-      <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-skill="${g.skill}">
-        <div class="tier-head">
-          <div>
-            <div class="tier-title"><span class="t-badge">${SKILL_ICON[g.skill] || "🔧"}</span>${g.skill}</div>
-            <div class="tier-sub">재료 ${g.items.length}종</div>
-          </div>
-          <div class="tier-right">
-            <span class="tier-prog">${doneCnt}/${g.items.length}</span>
-            <span class="tier-arrow">▶</span>
-          </div>
-        </div>
-        <div class="tier-body">${rows}</div>
-      </div>`;
-    }).join("");
   } else {
-    // ── 티어별 보기 ──
+    // ── 무역시작(티어별) 보기: 교역품 티어 순서대로 ──
     html += post.tiers.map(ti => {
       const doneCnt = ti.mats.filter(m => matCount(post.id, ti.t, m.n) >= m.q).length;
       const allDone = doneCnt === ti.mats.length;
