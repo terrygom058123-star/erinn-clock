@@ -26,6 +26,12 @@ git push -q
 echo "▶ Cloudflare Pages 배포 (mabi-erinn.pages.dev)..."
 TMP=$(mktemp -d)
 cp index.html renderer.js style.css sw.js "$TMP/"
+
+# 웹에서만 캐시 무효화 (맥 앱은 로컬 파일이라 불필요)
+V=$(date +%Y%m%d%H%M%S)
+sed -i '' -E "s|(href=\"style\.css)\"|\1?v=$V\"|"  "$TMP/index.html"
+sed -i '' -E "s|(src=\"renderer\.js)\"|\1?v=$V\"|" "$TMP/index.html"
+echo "  캐시 무효화 v=$V"
 npx --prefix ../mabinogi-push-server wrangler pages deploy "$TMP" \
   --project-name mabi-erinn --branch main --commit-dirty=true 2>&1 | tail -3
 rm -rf "$TMP"
