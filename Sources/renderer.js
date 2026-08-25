@@ -550,6 +550,181 @@ function groupByAssignee(posts) {
     .map(a => ({ who: a, items: groups[a.name] }));
 }
 
+// ─── 물물교역 루트 ───────────────────────────────────────
+// 지도 개략도용 좌표 (실제 지도의 대략적인 위치 관계를 단순화해 표시)
+const ROUTE_MAP_NODES = {
+  "페라":        { x: 115, y: 28,  type: "barter", icon: "🌋" },
+  "칼리다":      { x: 168, y: 52,  type: "barter", icon: "♨️" },
+  "발레스":      { x: 118, y: 88,  type: "normal" },
+  "셀라 항구":   { x: 44,  y: 126, type: "port"   },
+  "코르":        { x: 190, y: 158, type: "normal" },
+  "필리아":      { x: 288, y: 190, type: "normal" },
+  "오아시스":    { x: 256, y: 220, type: "barter", icon: "🏜️" },
+  "켈라":        { x: 80,  y: 252, type: "normal" },
+  "켈라 항구":   { x: 44,  y: 276, type: "port"   },
+  "카루숲":      { x: 168, y: 288, type: "barter", icon: "🌲" },
+  "콘누스 항구": { x: 305, y: 258, type: "port"   },
+  // 본토(울라)
+  "케안 항구":   { x: 70,  y: 336, type: "port", mainland: true },
+  "카브 항구":   { x: 170, y: 336, type: "port", mainland: true },
+  "타라":        { x: 278, y: 336, type: "city", mainland: true },
+};
+
+const TRADE_ROUTES = [
+  {
+    id: "r1", name: "1차", cert: "임프의 고급 보증서",
+    path: ["페라", "칼리다", "셀라 항구", "케안 항구", "타라"],
+    pathLabel: "페라(자르딘 해변) → 칼리다 → 셀라 항구 → 케안 항구 → 타라",
+    load: [
+      { post: "페라 교역소", icon: "🌋", items: [
+        { n: "라스파 흑표범의 가죽", q: 3 }, { n: "화산 도마뱀의 알", q: 7 },
+        { n: "익시온의 뿔", q: 10 }, { n: "마그마 스톤", q: 11 } ] },
+      { post: "칼리다 교역소", icon: "♨️", items: [
+        { n: "핑크 솔트", q: 3 }, { n: "대형 캠핑 텐트", q: 7 },
+        { n: "온천 입욕제", q: 10 }, { n: "칼리다 연어", q: 7 } ] },
+    ],
+  },
+  {
+    id: "r2", name: "2차", cert: "임프 보증서",
+    path: ["페라", "칼리다", "코르"],
+    pathLabel: "페라(자르딘 해변) → 칼리다 → 코르",
+    load: [
+      { post: "페라 교역소", icon: "🌋", items: [
+        { n: "화산 도마뱀의 알", q: 1 }, { n: "마그마 스톤", q: 4 }, { n: "화산 머드팩", q: 25 } ] },
+      { post: "칼리다 교역소", icon: "♨️", items: [
+        { n: "대형 캠핑 텐트", q: 1 }, { n: "칼리다 연어", q: 8 }, { n: "맥반석 계란", q: 25 } ] },
+    ],
+  },
+  {
+    id: "r3", name: "3차", cert: "임프의 고급 보증서",
+    path: ["오아시스", "카루숲", "켈라 항구", "카브 항구", "타라"],
+    pathLabel: "오아시스 → 카루숲(카루숲 남쪽) → 켈라 항구 → 카브 항구 → 타라",
+    load: [
+      { post: "오아시스 교역소", icon: "🏜️", items: [
+        { n: "거대 송곳니 화석", q: 3 }, { n: "선인장 꽃", q: 7 },
+        { n: "오아시스 그림", q: 10 }, { n: "프리즌 고스트의 날개", q: 11 } ] },
+      { post: "카루숲 교역소", icon: "🌲", items: [
+        { n: "조개 껍질 화석", q: 3 }, { n: "카루 표고 버섯", q: 7 },
+        { n: "스톤 홀스 조각상", q: 10 }, { n: "목공예품", q: 7 } ] },
+    ],
+  },
+  {
+    id: "r4", name: "4차", cert: "임프 보증서",
+    path: ["카루숲", "오아시스", "코르"],
+    pathLabel: "카루숲(카루숲 남쪽) → 오아시스 → 코르",
+    load: [
+      { post: "카루숲 교역소", icon: "🌲", items: [
+        { n: "카루 표고 버섯", q: 1 }, { n: "목공예품", q: 8 }, { n: "우드 테이블", q: 25 } ] },
+      { post: "오아시스 교역소", icon: "🏜️", items: [
+        { n: "선인장 꽃", q: 1 }, { n: "프리즌 고스트의 날개", q: 4 }, { n: "고운 모래", q: 25 } ] },
+    ],
+  },
+];
+
+let routeState = JSON.parse(localStorage.getItem("erinn-route") || "{}");
+let routeCur   = localStorage.getItem("erinn-route-cur") || "r1";
+function saveRouteState() { localStorage.setItem("erinn-route", JSON.stringify(routeState)); }
+function routeKey(rid, post, item) { return `${rid}|${post}|${item}`; }
+function routeDone(rid, post, item) { return !!routeState[routeKey(rid, post, item)]; }
+
+function routeProgress(r) {
+  let done = 0, total = 0;
+  r.load.forEach(l => l.items.forEach(it => {
+    total++;
+    if (routeDone(r.id, l.post, it.n)) done++;
+  }));
+  return { done, total };
+}
+
+// 경로 개략도 SVG
+function routeMapSvg(route) {
+  const path = route.path;
+  const pts = path.map(n => ROUTE_MAP_NODES[n]).filter(Boolean);
+
+  let lines = "";
+  for (let i = 0; i < pts.length - 1; i++) {
+    lines += `<line x1="${pts[i].x}" y1="${pts[i].y}" x2="${pts[i + 1].x}" y2="${pts[i + 1].y}"
+      stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="5 4" opacity="0.95"/>`;
+  }
+
+  const colorOf = t => t === "barter" ? "#facc15" : t === "port" ? "#c4b5fd" : t === "city" ? "#fca5a5" : "#94a3b8";
+  const nodes = Object.entries(ROUTE_MAP_NODES).map(([name, n]) => {
+    const idx = path.indexOf(name);
+    const active = idx >= 0;
+    const r = active ? 7 : 4;
+    const fill = active ? colorOf(n.type) : "#334155";
+    const stroke = active ? "#fff" : "#1e293b";
+    const num = active
+      ? `<text x="${n.x}" y="${n.y + 3}" font-size="8" font-weight="700" text-anchor="middle" fill="#0f172a">${idx + 1}</text>`
+      : "";
+    const label = `<text x="${n.x}" y="${n.y - (active ? 11 : 8)}" font-size="8.5" text-anchor="middle"
+        fill="${active ? "#e2e8f0" : "#475569"}" font-weight="${active ? 700 : 400}">${name}</text>`;
+    return `<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>${num}${label}`;
+  }).join("");
+
+  return `
+  <svg class="route-map" viewBox="0 0 340 352" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="340" height="352" fill="#0b1120" rx="12"/>
+    <line x1="10" y1="308" x2="330" y2="308" stroke="#1e293b" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="330" y="303" font-size="8" fill="#475569" text-anchor="end">이리아</text>
+    <text x="330" y="320" font-size="8" fill="#475569" text-anchor="end">본토(울라)</text>
+    ${lines}${nodes}
+  </svg>`;
+}
+
+function renderRoutesHtml() {
+  const r = TRADE_ROUTES.find(x => x.id === routeCur) || TRADE_ROUTES[0];
+  const pr = routeProgress(r);
+
+  const tabs = TRADE_ROUTES.map(x => {
+    const p = routeProgress(x);
+    return `<button class="route-tab ${x.id === routeCur ? "on" : ""} ${p.done === p.total ? "done" : ""}" data-route="${x.id}">
+      ${x.name}<span class="rt-prog">${p.done}/${p.total}</span>
+    </button>`;
+  }).join("");
+
+  const steps = r.path.map((n, i) => {
+    const node = ROUTE_MAP_NODES[n] || {};
+    const kind = node.type === "port" ? "항구" : node.type === "city" ? "판매" : node.type === "barter" ? "물물교역소" : "교역소";
+    return `<div class="rt-step">
+      <span class="rt-no">${i + 1}</span>
+      <span class="rt-name">${node.icon ? node.icon + " " : ""}${n}</span>
+      <span class="rt-kind">${kind}</span>
+    </div>`;
+  }).join(`<div class="rt-arrow">↓</div>`);
+
+  const loads = r.load.map(l => `
+    <div class="rt-load">
+      <div class="rt-load-head">${l.icon} ${l.post}</div>
+      ${l.items.map(it => {
+        const done = routeDone(r.id, l.post, it.n);
+        return `<div class="rt-item ${done ? "done" : ""}" data-route="${r.id}" data-post="${l.post}" data-item="${it.n}">
+          <span class="rt-check">${done ? "✓" : ""}</span>
+          <span class="rt-item-name">${it.n}</span>
+          <span class="rt-item-q">${it.q}개</span>
+        </div>`;
+      }).join("")}
+    </div>`).join("");
+
+  return `
+  <div class="route-tabs">${tabs}</div>
+  <div class="route-card">
+    <div class="route-head">
+      <div>
+        <div class="route-title">🗺️ ${r.name} 물물교역 루트</div>
+        <div class="route-cert">★ ${r.cert} 추천</div>
+      </div>
+      <span class="route-prog ${pr.done === pr.total ? "done" : ""}">${pr.done}/${pr.total}</span>
+    </div>
+    ${routeMapSvg(r)}
+    <div class="route-path">${r.pathLabel}</div>
+    <div class="rt-steps">${steps}</div>
+    <div class="rt-load-title">📦 교역소에서 챙길 물품 <span>(눌러서 체크)</span></div>
+    ${loads}
+    <button class="rt-reset" id="btn-route-reset">${r.name} 체크 초기화</button>
+  </div>`;
+}
+
 // 스킬별로 재료 묶기 (posts 배열을 주면 여러 교역소를 통합)
 function groupBySkill(posts) {
   const list = Array.isArray(posts) ? posts : [posts];
@@ -610,7 +785,7 @@ function renderTrade() {
   if (!postsEl) return;
 
   // 교역소 선택 버튼 (전체 통합 보기에서는 숨김)
-  postsEl.style.display = (tradeView === "all" || tradeView === "who") ? "none" : "flex";
+  postsEl.style.display = ["all", "who", "route"].includes(tradeView) ? "none" : "flex";
   postsEl.innerHTML = TRADE_POSTS.map(p => {
     const pr = postProgress(p);
     return `<button class="trade-post-btn ${p.id === tradePost ? "active" : ""}" data-post="${p.id}">
@@ -635,7 +810,44 @@ function renderTrade() {
     <button class="${tradeView === "who" ? "on" : ""}" data-view="who">담당별</button>
     <button class="${tradeView === "all" ? "on" : ""}" data-view="all">전체 통합</button>
     <button class="${tradeView === "tier" ? "on" : ""}" data-view="tier">무역시작</button>
+    <button class="${tradeView === "route" ? "on" : ""}" data-view="route">루트</button>
   </div>`;
+
+  if (tradeView === "route") {
+    // ── 물물교역 루트: 1~4차 판매 루트 진행 ──
+    tiersEl.innerHTML = html + renderRoutesHtml();
+
+    tiersEl.querySelectorAll(".view-toggle button").forEach(b => {
+      b.addEventListener("click", () => {
+        tradeView = b.dataset.view;
+        localStorage.setItem("erinn-trade-view", tradeView);
+        renderTrade();
+      });
+    });
+    tiersEl.querySelectorAll(".route-tab").forEach(b => {
+      b.addEventListener("click", () => {
+        routeCur = b.dataset.route;
+        localStorage.setItem("erinn-route-cur", routeCur);
+        renderTrade();
+      });
+    });
+    tiersEl.querySelectorAll(".rt-item").forEach(el => {
+      el.addEventListener("click", () => {
+        const k = routeKey(el.dataset.route, el.dataset.post, el.dataset.item);
+        routeState[k] = !routeState[k];
+        saveRouteState();
+        renderTrade();
+      });
+    });
+    document.getElementById("btn-route-reset")?.addEventListener("click", () => {
+      const r = TRADE_ROUTES.find(x => x.id === routeCur);
+      if (!confirm(`${r.name} 루트의 체크를 모두 지울까요?`)) return;
+      r.load.forEach(l => l.items.forEach(it => { delete routeState[routeKey(r.id, l.post, it.n)]; }));
+      saveRouteState();
+      renderTrade();
+    });
+    return;   // 루트 보기는 여기서 끝 (원재료 총합 카드 없음)
+  }
 
   if (tradeView === "who") {
     // ── 담당별: 사람마다 맡은 재료 모아보기 (교역소 구분 없음) ──
