@@ -253,6 +253,21 @@ body {
 .tr-mat-count { font-size: 12px; color: #64748b; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tr-mat-count b { font-size: 14px; color: #fbbf24; }
 .tr-mat.done .tr-mat-count b { color: #22c55e; }
+/* 1인분 / 4명분 표기 */
+.tr-mat-count { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.tr-cnt-4 {
+  font-size: 11px; font-weight: 700; color: #38bdf8;
+  background: #0c2c40; border-radius: 5px; padding: 1px 6px; white-space: nowrap;
+}
+.tr-mat.done .tr-cnt-4 { color: #22c55e; background: #0f2e1d; }
+
+.who-per, .raw-per {
+  display: inline-block; font-size: 10px; font-weight: 700; color: #38bdf8;
+  background: #0c2c40; border-radius: 5px; padding: 1px 6px; margin-left: 4px;
+}
+.who-per.one, .raw-per.one { color: #cbd5e1; background: #334155; }
+.all-sub { font-size: 10.5px; color: #7dd3fc; margin-top: 4px; opacity: 0.85; }
+
 .tr-mat-recipe { font-size: 11px; color: #6366f1; margin-top: 3px; line-height: 1.4; }
 .tr-mat-recipe .rc-skill { color: #475569; }
 .tr-mat-raw { font-size: 11px; color: #f59e0b; margin-top: 2px; line-height: 1.4; }

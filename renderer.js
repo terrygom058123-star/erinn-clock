@@ -463,7 +463,7 @@ function postProgress(post) {
 }
 
 // 재료 한 줄 (모든 보기 공용). fromLabel을 주면 출처(교역소·티어)를 배지로 표시
-function matRowHtml(post, ti, m, fromLabel) {
+function matRowHtml(post, ti, m, fromLabel, partyQty) {
   const cur = matCount(post.id, ti.t, m.n);
   const done = cur >= m.q;
   const pct = Math.min(100, Math.round((cur / m.q) * 100));
@@ -493,7 +493,10 @@ function matRowHtml(post, ti, m, fromLabel) {
   <div class="tr-mat ${done ? "done" : ""}">
     <div class="tr-mat-head">
       <span class="tr-mat-name">${done ? "✅ " : ""}${m.n}</span>
-      <span class="tr-mat-count"><b>${cur}</b> / ${m.q}</span>
+      <span class="tr-mat-count">
+        <span class="tr-cnt-1"><b>${cur}</b> / ${m.q}</span>
+        ${partyQty ? `<span class="tr-cnt-4">👥 ${PARTY_SIZE}명분 ${partyQty.toLocaleString()}개</span>` : ""}
+      </span>
     </div>
     ${tierTag}
     ${recipe}
@@ -530,6 +533,8 @@ const TRADE_ASSIGNEES = [
     items: ["최고급 가죽끈", "고급 가죽끈"] },
 ];
 const UNASSIGNED = { name: "미지정", icon: "❓", skills: [] };
+const PARTY_SIZE = 4;                 // 4명이 함께 교역
+const SELF_ASSIGNEE = "각자";          // '각자'는 본인 것만 준비하므로 4명분 계산 제외
 
 function assigneeOf(matName) {
   const byItem = TRADE_ASSIGNEES.find(a => a.items?.includes(matName));
@@ -790,8 +795,10 @@ function rawTotalsBySkill(posts, onlyRemaining, mode = "skill") {
     const key = mode === "assignee"
       ? assigneeOf(m.n).name
       : (CRAFT_RECIPES[m.n]?.skill || "직접 수급");
+    // 담당별에서는 '각자'(본인 몫)를 뺀 나머지를 4명분으로 계산
+    const mul = (mode === "assignee" && key !== SELF_ASSIGNEE) ? PARTY_SIZE : 1;
     byKey[key] = byKey[key] || {};
-    expandToRaw(m.n, need, byKey[key]);
+    expandToRaw(m.n, need * mul, byKey[key]);
   })));
   Object.values(byKey).forEach(o => Object.keys(o).forEach(k => distinct.add(k)));
 
@@ -805,6 +812,7 @@ function rawTotalsBySkill(posts, onlyRemaining, mode = "skill") {
   const groups = order.filter(k => byKey[k]).map(k => ({
     skill: k,
     icon: iconOf(k),
+    per: mode === "assignee" ? (k === SELF_ASSIGNEE ? "1인분" : `${PARTY_SIZE}명분`) : "",
     rows: Object.entries(byKey[k]).sort((a, b) => b[1] - a[1]),
   }));
   return { groups, distinctCount: distinct.size };
@@ -886,7 +894,8 @@ function renderTrade() {
     const totalDone = groups.reduce((s, g) =>
       s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length, 0);
 
-    html += `<div class="all-summary">👥 담당 ${groups.length}명 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료</div>`;
+    html += `<div class="all-summary">👥 담당 ${groups.length}명 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료
+      <div class="all-sub">담당 재료는 ${PARTY_SIZE}명분 · '${SELF_ASSIGNEE}'는 1인분</div></div>`;
     html += groups.map(g => {
       const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length;
       const allDone = doneCnt === g.items.length;
@@ -898,15 +907,19 @@ function renderTrade() {
         return SKILL_ORDER.indexOf(sa) - SKILL_ORDER.indexOf(sb);
       });
       const skillNames = [...new Set(sorted.map(({ m }) => CRAFT_RECIPES[m.n]?.skill || "직접 수급"))];
+      const isSelf = g.who.name === SELF_ASSIGNEE;
       const rows = sorted
-        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`))
+        .map(({ post: p, ti, m }) => matRowHtml(
+          p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`,
+          isSelf ? null : m.q * PARTY_SIZE))
         .join("");
       return `
       <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-who="${g.who.name}">
         <div class="tier-head">
           <div>
             <div class="tier-title"><span class="t-badge">${g.who.icon}</span>${g.who.name}</div>
-            <div class="tier-sub">${skillNames.join(" · ")} · 재료 ${g.items.length}종</div>
+            <div class="tier-sub">${skillNames.join(" · ")} · 재료 ${g.items.length}종
+              <span class="who-per ${isSelf ? "one" : ""}">${isSelf ? "1인분" : PARTY_SIZE + "명분"}</span></div>
           </div>
           <div class="tier-right">
             <span class="tier-prog">${doneCnt}/${g.items.length}</span>
@@ -986,7 +999,8 @@ function renderTrade() {
       : rawGroups.map(g => `
         <div class="raw-group">
           <div class="raw-group-head">
-            <span>${g.icon || SKILL_ICON[g.skill] || "🔧"} ${g.skill}</span>
+            <span>${g.icon || SKILL_ICON[g.skill] || "🔧"} ${g.skill}
+              ${g.per ? `<span class="raw-per ${g.per === "1인분" ? "one" : ""}">${g.per}</span>` : ""}</span>
             <span class="raw-group-n">${g.rows.length}종</span>
           </div>
           <div class="raw-list">${g.rows.map(([n, q]) =>
