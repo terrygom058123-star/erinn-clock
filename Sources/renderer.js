@@ -557,18 +557,18 @@ const ROUTE_MAP_NODES = {
   "페라":        { x: 115, y: 22,  type: "barter", icon: "🌋" },
   "칼리다":      { x: 168, y: 38,  type: "barter", icon: "♨️" },
   "발레스":      { x: 118, y: 61,  type: "normal" },
-  "셀라 항구":   { x: 44,  y: 85,  type: "port"   },
+  "셀라 항구":   { x: 50,  y: 88,  type: "port"   },
   "코르":        { x: 190, y: 106, type: "normal" },
   "필리아":      { x: 288, y: 127, type: "normal" },
   "오아시스":    { x: 256, y: 146, type: "barter", icon: "🏜️" },
-  "켈라":        { x: 80,  y: 167, type: "normal" },
-  "켈라 항구":   { x: 44,  y: 182, type: "port"   },
+  "켈라":        { x: 88,  y: 165, type: "normal" },
+  "켈라 항구":   { x: 64,  y: 180, type: "port"   },
   "카루숲":      { x: 168, y: 190, type: "barter", icon: "🌲" },
-  "콘누스 항구": { x: 305, y: 171, type: "port"   },
+  "콘누스 항구": { x: 302, y: 168, type: "port"   },
   // 본토(울라)
-  "케안 항구":   { x: 70,  y: 218, type: "port", mainland: true },
-  "카브 항구":   { x: 170, y: 218, type: "port", mainland: true },
-  "타라":        { x: 278, y: 218, type: "city", mainland: true },
+  "케안 항구":   { x: 70,  y: 226, type: "port", mainland: true },
+  "카브 항구":   { x: 170, y: 226, type: "port", mainland: true },
+  "타라":        { x: 278, y: 226, type: "city", mainland: true },
 };
 
 const TRADE_ROUTES = [
@@ -653,22 +653,52 @@ function routeMapSvg(route) {
     const idx = path.indexOf(name);
     const active = idx >= 0;
     const r = active ? 6 : 3.2;
-    const fill = active ? colorOf(n.type) : "#334155";
-    const stroke = active ? "#fff" : "#1e293b";
+    const fill = active ? colorOf(n.type) : "#475569";
+    const stroke = active ? "#fff" : "#334155";
     const num = active
       ? `<text x="${n.x}" y="${n.y + 2.6}" font-size="7.5" font-weight="800" text-anchor="middle" fill="#0f172a">${idx + 1}</text>`
       : "";
     const label = `<text x="${n.x}" y="${n.y - (active ? 9.5 : 6.5)}" font-size="7.5" text-anchor="middle"
-        fill="${active ? "#e2e8f0" : "#475569"}" font-weight="${active ? 700 : 400}">${name}</text>`;
+        fill="${active ? "#f8fafc" : "#94a3b8"}" font-weight="${active ? 700 : 400}"
+        stroke="#0a1628" stroke-width="2.2" paint-order="stroke">${name}</text>`;
     return `<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>${num}${label}`;
   }).join("");
 
+  // 이리아 대륙 해안선 (실제 지도 형태를 단순화해 직접 그림)
+  const IRIA = "M109,12 L126,11 L133,16 L143,21 L153,23 L162,26 L172,36 L177,45 L182,51 " +
+    "L191,56 L213,60 L237,64 L249,76 L251,88 L261,94 L285,101 L304,108 L317,118 L319,131 " +
+    "L314,143 L317,159 L309,172 L297,182 L273,191 L237,197 L201,199 L153,198 L117,194 " +
+    "L92,187 L76,177 L66,164 L56,151 L51,138 L49,124 L53,111 L50,94 L54,84 L66,78 L80,73 " +
+    "L95,68 L104,59 L107,48 L106,35 L108,21 Z";
+
   return `
-  <svg class="route-map" viewBox="0 0 340 238" xmlns="http://www.w3.org/2000/svg">
-    <rect x="0" y="0" width="340" height="238" fill="#0b1120" rx="12"/>
-    <line x1="10" y1="200" x2="330" y2="200" stroke="#1e293b" stroke-width="1" stroke-dasharray="3 3"/>
-    <text x="330" y="196" font-size="7.5" fill="#475569" text-anchor="end">이리아</text>
-    <text x="330" y="232" font-size="7.5" fill="#475569" text-anchor="end">본토(울라)</text>
+  <svg class="route-map" viewBox="0 0 340 250" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0a1a2f"/><stop offset="100%" stop-color="#081426"/>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="340" height="250" fill="url(#sea)" rx="12"/>
+
+    <!-- 이리아 대륙 -->
+    <path d="${IRIA}" fill="#243247" stroke="#3b5170" stroke-width="1.2" stroke-linejoin="round"/>
+    <!-- 레네스 섬 -->
+    <ellipse cx="176" cy="11" rx="9" ry="5" fill="#243247" stroke="#3b5170" stroke-width="1"/>
+    <text x="176" y="13.5" font-size="5" fill="#64748b" text-anchor="middle">레네스</text>
+
+    <!-- 지역 이름 (옅게) -->
+    <text x="118" y="34" font-size="6" fill="#4b6180" text-anchor="middle">페라 화산</text>
+    <text x="72"  y="100" font-size="6" fill="#4b6180" text-anchor="middle">셀라 해변</text>
+    <text x="150" y="126" font-size="6" fill="#4b6180" text-anchor="middle">라베로 고산지</text>
+    <text x="272" y="152" font-size="6" fill="#4b6180" text-anchor="middle">온가 사막</text>
+    <text x="130" y="172" font-size="6" fill="#4b6180" text-anchor="middle">무유 사막</text>
+    <text x="232" y="185" font-size="6" fill="#4b6180" text-anchor="middle">나레스 고원</text>
+
+    <!-- 본토(울라) -->
+    <rect x="10" y="212" width="320" height="32" rx="9" fill="#243247" stroke="#3b5170" stroke-width="1.2"/>
+    <text x="330" y="208" font-size="7" fill="#4b6180" text-anchor="end">이리아 대륙</text>
+    <text x="20"  y="240" font-size="7" fill="#4b6180">본토(울라) · 배로 이동</text>
+
     ${lines}${nodes}
   </svg>`;
 }
