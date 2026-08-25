@@ -401,8 +401,9 @@ let tradeState = JSON.parse(localStorage.getItem("erinn-trade") || "{}");
 let tradePost  = localStorage.getItem("erinn-trade-post") || TRADE_POSTS[0].id;
 let tradeOpen  = {};   // 펼쳐진 티어
 let tradeRemainOnly = localStorage.getItem("erinn-trade-remain") === "1";
-let tradeView = localStorage.getItem("erinn-trade-view") || "who";   // who | all | tier
-if (tradeView === "skill") tradeView = "who";   // 스킬별 보기는 없어짐
+let rawOpen = localStorage.getItem("erinn-raw-open") === "1";   // 원재료 총합 펼침 (기본 닫힘)
+let tradeView = localStorage.getItem("erinn-trade-view") || "who";   // who | all | route
+if (["skill", "tier"].includes(tradeView)) tradeView = "who";   // 없어진 보기는 담당별로
 function saveTrade() { localStorage.setItem("erinn-trade", JSON.stringify(tradeState)); }
 
 function matKey(postId, tier, matName) { return `${postId}|${tier}|${matName}`; }
@@ -785,7 +786,7 @@ function renderTrade() {
   if (!postsEl) return;
 
   // 교역소 선택 버튼 (전체 통합 보기에서는 숨김)
-  postsEl.style.display = ["all", "who", "route"].includes(tradeView) ? "none" : "flex";
+  postsEl.style.display = "none";   // 모든 보기가 교역소 통합이라 선택 버튼 불필요
   postsEl.innerHTML = TRADE_POSTS.map(p => {
     const pr = postProgress(p);
     return `<button class="trade-post-btn ${p.id === tradePost ? "active" : ""}" data-post="${p.id}">
@@ -809,7 +810,6 @@ function renderTrade() {
   <div class="view-toggle">
     <button class="${tradeView === "who" ? "on" : ""}" data-view="who">담당별</button>
     <button class="${tradeView === "all" ? "on" : ""}" data-view="all">전체 통합</button>
-    <button class="${tradeView === "tier" ? "on" : ""}" data-view="tier">무역시작</button>
     <button class="${tradeView === "route" ? "on" : ""}" data-view="route">루트</button>
   </div>`;
 
@@ -849,7 +849,7 @@ function renderTrade() {
     return;   // 루트 보기는 여기서 끝 (원재료 총합 카드 없음)
   }
 
-  if (tradeView === "who") {
+  if (tradeView !== "all") {
     // ── 담당별: 사람마다 맡은 재료 모아보기 (교역소 구분 없음) ──
     const groups = groupByAssignee(TRADE_POSTS);
     const totalMats = groups.reduce((s, g) => s + g.items.length, 0);
@@ -886,7 +886,7 @@ function renderTrade() {
         <div class="tier-body">${rows}</div>
       </div>`;
     }).join("");
-  } else if (tradeView === "all") {
+  } else {
     // ── 전체 통합: 교역소 구분 없이 스킬별로 모두 모아 보기 ──
     const groups = groupBySkill(TRADE_POSTS);
     const totalMats = groups.reduce((s, g) => s + g.items.length, 0);
@@ -916,28 +916,6 @@ function renderTrade() {
         <div class="tier-body">${rows}</div>
       </div>`;
     }).join("");
-  } else {
-    // ── 무역시작(티어별) 보기: 교역품 티어 순서대로 ──
-    html += post.tiers.map(ti => {
-      const doneCnt = ti.mats.filter(m => matCount(post.id, ti.t, m.n) >= m.q).length;
-      const allDone = doneCnt === ti.mats.length;
-      const open = !!tradeOpen[`${post.id}|${ti.t}`];
-      const rows = ti.mats.map(m => matRowHtml(post, ti, m, null)).join("");
-      return `
-      <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-tier="${ti.t}">
-        <div class="tier-head">
-          <div>
-            <div class="tier-title"><span class="t-badge">${ti.t}티어</span>${ti.name}</div>
-            <div class="tier-sub">${ti.qty}개 제출</div>
-          </div>
-          <div class="tier-right">
-            <span class="tier-prog">${doneCnt}/${ti.mats.length}</span>
-            <span class="tier-arrow">▶</span>
-          </div>
-        </div>
-        <div class="tier-body">${rows}</div>
-      </div>`;
-    }).join("");
   }
   tiersEl.innerHTML = html;
 
@@ -950,28 +928,29 @@ function renderTrade() {
   });
 
   // ─ 원재료 총합 카드 (생활스킬 영역별) ─
-  const isWho = tradeView === "who";
-  const isAll = tradeView === "all" || isWho;
+  const isWho = tradeView !== "all";
   const { groups: rawGroups, distinctCount } =
-    rawTotalsBySkill(isAll ? TRADE_POSTS : post, tradeRemainOnly, isWho ? "assignee" : "skill");
-  const sumLabel = isWho ? "👥 담당별 · 교역소 4곳"
-                 : isAll ? "🚢 교역소 4곳 전체"
-                 : `${post.icon} ${post.name}`;
+    rawTotalsBySkill(TRADE_POSTS, tradeRemainOnly, isWho ? "assignee" : "skill");
+  const sumLabel = isWho ? "👥 담당별 · 교역소 4곳" : "🚢 교역소 4곳 전체";
   // 여러 영역에 걸쳐 쓰이는 원재료 찾기 (안내용)
   const seenIn = {};
   rawGroups.forEach(g => g.rows.forEach(([n]) => { seenIn[n] = (seenIn[n] || 0) + 1; }));
   const dupNames = Object.entries(seenIn).filter(([, c]) => c > 1).map(([n]) => n);
   const sumHtml = `
-  <div class="raw-total">
-    <div class="raw-head">
+  <div class="raw-total ${rawOpen ? "open" : ""}">
+    <div class="raw-head" id="raw-head">
       <div>
         <div class="raw-title">📦 원재료 총 필요량</div>
         <div class="raw-sub">${sumLabel} · 재료 ${distinctCount}종</div>
       </div>
-      <button class="raw-toggle ${tradeRemainOnly ? "on" : ""}" id="btn-raw-toggle">
-        ${tradeRemainOnly ? "남은 것만" : "전체"}
-      </button>
+      <div class="raw-head-right">
+        ${rawOpen ? `<button class="raw-toggle ${tradeRemainOnly ? "on" : ""}" id="btn-raw-toggle">
+          ${tradeRemainOnly ? "남은 것만" : "전체"}
+        </button>` : ""}
+        <span class="raw-arrow">▶</span>
+      </div>
     </div>
+    <div class="raw-body">
     ${rawGroups.length === 0
       ? `<div class="raw-empty">모든 재료를 다 모았어요! 🎉</div>`
       : rawGroups.map(g => `
@@ -986,10 +965,18 @@ function renderTrade() {
     ${dupNames.length
       ? `<div class="raw-note">※ ${dupNames.slice(0, 3).join(", ")}${dupNames.length > 3 ? " 등" : ""}은 여러 영역에서 쓰여 나뉘어 표시됩니다 (합치면 총량)</div>`
       : ""}
+    </div>
   </div>`;
   tiersEl.insertAdjacentHTML("beforeend", sumHtml);
 
-  document.getElementById("btn-raw-toggle")?.addEventListener("click", () => {
+  document.getElementById("raw-head")?.addEventListener("click", () => {
+    rawOpen = !rawOpen;
+    localStorage.setItem("erinn-raw-open", rawOpen ? "1" : "0");
+    renderTrade();
+  });
+
+  document.getElementById("btn-raw-toggle")?.addEventListener("click", e => {
+    e.stopPropagation();
     tradeRemainOnly = !tradeRemainOnly;
     localStorage.setItem("erinn-trade-remain", tradeRemainOnly ? "1" : "0");
     renderTrade();
@@ -1041,9 +1028,8 @@ function renderTrade() {
 
 document.getElementById("btn-trade-reset")?.addEventListener("click", () => {
   // 전체 통합 보기에서는 4곳 모두, 아니면 현재 교역소만 초기화
-  const wholeAll = tradeView === "all" || tradeView === "who";
-  const targets = wholeAll ? TRADE_POSTS : [TRADE_POSTS.find(p => p.id === tradePost)];
-  const label = wholeAll ? "교역소 4곳 전체" : `${targets[0].name} 교역소`;
+  const targets = TRADE_POSTS;
+  const label = "교역소 4곳 전체";
   if (!confirm(`${label}의 수집 기록을 모두 지울까요?`)) return;
   targets.forEach(p => p.tiers.forEach(ti => ti.mats.forEach(m => {
     delete tradeState[matKey(p.id, ti.t, m.n)];
@@ -1278,10 +1264,12 @@ const DEFAULT_ALARMS = [
   enabled: true,
 }));
 
-let alarms = JSON.parse(localStorage.getItem("erinn-alarms") || "null");
-if (!alarms || alarms.length === 0) {
-  alarms = DEFAULT_ALARMS;
+let alarms = JSON.parse(localStorage.getItem("erinn-alarms") || "null") || [];
+// 예전에 자동으로 깔리던 '굵은 실' 기본 알람 1회 정리 (원하면 설정에서 다시 불러올 수 있음)
+if (!localStorage.getItem("erinn-mig-nodefault")) {
+  alarms = alarms.filter(a => a.label !== "굵은 실");
   localStorage.setItem("erinn-alarms", JSON.stringify(alarms));
+  localStorage.setItem("erinn-mig-nodefault", "1");
 }
 let offsetSec = parseInt(localStorage.getItem("erinn-offset") || "0", 10);
 let activeAlert = null;
