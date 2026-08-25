@@ -553,21 +553,21 @@ function groupByAssignee(posts) {
 // ─── 물물교역 루트 ───────────────────────────────────────
 // 지도 개략도용 좌표 (실제 지도의 대략적인 위치 관계를 단순화해 표시)
 const ROUTE_MAP_NODES = {
-  "페라":        { x: 115, y: 28,  type: "barter", icon: "🌋" },
-  "칼리다":      { x: 168, y: 52,  type: "barter", icon: "♨️" },
-  "발레스":      { x: 118, y: 88,  type: "normal" },
-  "셀라 항구":   { x: 44,  y: 126, type: "port"   },
-  "코르":        { x: 190, y: 158, type: "normal" },
-  "필리아":      { x: 288, y: 190, type: "normal" },
-  "오아시스":    { x: 256, y: 220, type: "barter", icon: "🏜️" },
-  "켈라":        { x: 80,  y: 252, type: "normal" },
-  "켈라 항구":   { x: 44,  y: 276, type: "port"   },
-  "카루숲":      { x: 168, y: 288, type: "barter", icon: "🌲" },
-  "콘누스 항구": { x: 305, y: 258, type: "port"   },
+  "페라":        { x: 115, y: 22,  type: "barter", icon: "🌋" },
+  "칼리다":      { x: 168, y: 38,  type: "barter", icon: "♨️" },
+  "발레스":      { x: 118, y: 61,  type: "normal" },
+  "셀라 항구":   { x: 44,  y: 85,  type: "port"   },
+  "코르":        { x: 190, y: 106, type: "normal" },
+  "필리아":      { x: 288, y: 127, type: "normal" },
+  "오아시스":    { x: 256, y: 146, type: "barter", icon: "🏜️" },
+  "켈라":        { x: 80,  y: 167, type: "normal" },
+  "켈라 항구":   { x: 44,  y: 182, type: "port"   },
+  "카루숲":      { x: 168, y: 190, type: "barter", icon: "🌲" },
+  "콘누스 항구": { x: 305, y: 171, type: "port"   },
   // 본토(울라)
-  "케안 항구":   { x: 70,  y: 336, type: "port", mainland: true },
-  "카브 항구":   { x: 170, y: 336, type: "port", mainland: true },
-  "타라":        { x: 278, y: 336, type: "city", mainland: true },
+  "케안 항구":   { x: 70,  y: 218, type: "port", mainland: true },
+  "카브 항구":   { x: 170, y: 218, type: "port", mainland: true },
+  "타라":        { x: 278, y: 218, type: "city", mainland: true },
 };
 
 const TRADE_ROUTES = [
@@ -644,30 +644,30 @@ function routeMapSvg(route) {
   let lines = "";
   for (let i = 0; i < pts.length - 1; i++) {
     lines += `<line x1="${pts[i].x}" y1="${pts[i].y}" x2="${pts[i + 1].x}" y2="${pts[i + 1].y}"
-      stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="5 4" opacity="0.95"/>`;
+      stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 3.5" opacity="0.95"/>`;
   }
 
   const colorOf = t => t === "barter" ? "#facc15" : t === "port" ? "#c4b5fd" : t === "city" ? "#fca5a5" : "#94a3b8";
   const nodes = Object.entries(ROUTE_MAP_NODES).map(([name, n]) => {
     const idx = path.indexOf(name);
     const active = idx >= 0;
-    const r = active ? 7 : 4;
+    const r = active ? 6 : 3.2;
     const fill = active ? colorOf(n.type) : "#334155";
     const stroke = active ? "#fff" : "#1e293b";
     const num = active
-      ? `<text x="${n.x}" y="${n.y + 3}" font-size="8" font-weight="700" text-anchor="middle" fill="#0f172a">${idx + 1}</text>`
+      ? `<text x="${n.x}" y="${n.y + 2.6}" font-size="7.5" font-weight="800" text-anchor="middle" fill="#0f172a">${idx + 1}</text>`
       : "";
-    const label = `<text x="${n.x}" y="${n.y - (active ? 11 : 8)}" font-size="8.5" text-anchor="middle"
+    const label = `<text x="${n.x}" y="${n.y - (active ? 9.5 : 6.5)}" font-size="7.5" text-anchor="middle"
         fill="${active ? "#e2e8f0" : "#475569"}" font-weight="${active ? 700 : 400}">${name}</text>`;
     return `<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>${num}${label}`;
   }).join("");
 
   return `
-  <svg class="route-map" viewBox="0 0 340 352" xmlns="http://www.w3.org/2000/svg">
-    <rect x="0" y="0" width="340" height="352" fill="#0b1120" rx="12"/>
-    <line x1="10" y1="308" x2="330" y2="308" stroke="#1e293b" stroke-width="1" stroke-dasharray="3 3"/>
-    <text x="330" y="303" font-size="8" fill="#475569" text-anchor="end">이리아</text>
-    <text x="330" y="320" font-size="8" fill="#475569" text-anchor="end">본토(울라)</text>
+  <svg class="route-map" viewBox="0 0 340 238" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="340" height="238" fill="#0b1120" rx="12"/>
+    <line x1="10" y1="200" x2="330" y2="200" stroke="#1e293b" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="330" y="196" font-size="7.5" fill="#475569" text-anchor="end">이리아</text>
+    <text x="330" y="232" font-size="7.5" fill="#475569" text-anchor="end">본토(울라)</text>
     ${lines}${nodes}
   </svg>`;
 }
@@ -860,7 +860,7 @@ function renderTrade() {
     html += groups.map(g => {
       const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length;
       const allDone = doneCnt === g.items.length;
-      const open = tradeOpen[`who|${g.who.name}`] !== false;   // 기본 펼침
+      const open = !!tradeOpen[`who|${g.who.name}`];   // 기본 닫힘
       // 담당자 안에서도 스킬끼리 붙여서 보기 좋게 정렬
       const sorted = [...g.items].sort((a, b) => {
         const sa = CRAFT_RECIPES[a.m.n]?.skill || "직접 수급";
@@ -897,7 +897,7 @@ function renderTrade() {
     html += groups.map(g => {
       const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length;
       const allDone = doneCnt === g.items.length;
-      const open = tradeOpen[`all|skill|${g.skill}`] !== false;   // 기본 펼침
+      const open = !!tradeOpen[`all|skill|${g.skill}`];   // 기본 닫힘
       const rows = g.items
         .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`))
         .join("");
@@ -1001,11 +1001,11 @@ function renderTrade() {
       const card = head.closest(".tier-card");
       if (card.dataset.who) {
         const key = `who|${card.dataset.who}`;
-        tradeOpen[key] = tradeOpen[key] === false;   // 기본 펼침이라 반대로
+        tradeOpen[key] = !tradeOpen[key];
       } else if (card.dataset.skill) {
         const scope = card.dataset.all ? "all" : post.id;
         const key = `${scope}|skill|${card.dataset.skill}`;
-        tradeOpen[key] = tradeOpen[key] === false;   // 기본 펼침이라 반대로
+        tradeOpen[key] = !tradeOpen[key];
       } else {
         const key = `${post.id}|${card.dataset.tier}`;
         tradeOpen[key] = !tradeOpen[key];
