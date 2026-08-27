@@ -544,7 +544,7 @@ function postProgress(post) {
 }
 
 // 재료 한 줄 (모든 보기 공용). fromLabel을 주면 출처(교역소·티어)를 배지로 표시
-function matRowHtml(post, ti, m, fromLabel, orderKey) {
+function matRowHtml(post, ti, m, fromLabel, orderKey, showBuy) {
   const pmax = partyMaxOf(m.n);                                  // 준비할 인원수 (각자=1)
   const cur  = Math.min(matCount(post.id, ti.t, m.n), pmax);     // 완성한 명분
   const done = cur >= pmax;
@@ -580,6 +580,18 @@ function matRowHtml(post, ti, m, fromLabel, orderKey) {
   }
 
   const tierTag = fromLabel ? `<div class="tr-from">${fromLabel}</div>` : "";
+
+  // 구매 담당(각자) 품목은 경매장 시세를 함께 표시
+  let buyLine = "";
+  if (showBuy) {
+    const pc = priceOf(m.n);
+    buyLine = pc == null
+      ? `<div class="tr-buy none">구매 · 💰 시세를 눌러 가격 확인</div>`
+      : pc.price == null
+        ? `<div class="tr-buy none">구매 · 매물 없음</div>`
+        : `<div class="tr-buy">구매 · 개당 ${pc.price.toLocaleString()}G
+             <b>총 ${(pc.price * m.q * pmax).toLocaleString()}G</b></div>`;
+  }
   const mover = orderKey
     ? `<span class="tr-move" data-key="${orderKey}" data-mat="${m.n}">
          <button data-dir="-1" title="위로">▲</button><button data-dir="1" title="아래로">▼</button>
@@ -597,6 +609,7 @@ function matRowHtml(post, ti, m, fromLabel, orderKey) {
       </span>
     </div>
     ${tierTag}
+    ${buyLine}
     ${recipe}
     <div class="tr-bar"><div style="width:${pct}%"></div></div>
     <div class="tr-party" data-post="${post.id}" data-tier="${ti.t}" data-mat="${m.n}" data-max="${pmax}">
@@ -884,9 +897,9 @@ function rawTotalsBySkill(posts, onlyRemaining, mode = "skill") {
   const distinct = new Set();
 
   list.forEach(post => post.tiers.forEach(ti => ti.mats.forEach(m => {
-    const key = mode === "assignee"
-      ? assigneeOf(m.n).name
-      : (CRAFT_RECIPES[m.n]?.skill || "직접 수급");
+    const who = assigneeOf(m.n).name;
+    if (mode === "assignee" && who === SELF_ASSIGNEE) return;   // 각자는 구매하므로 채집 목록에서 제외
+    const key = mode === "assignee" ? who : (CRAFT_RECIPES[m.n]?.skill || "직접 수급");
     const pmax  = partyMaxOf(m.n);
     const cur   = Math.min(matCount(post.id, ti.t, m.n), pmax);
     const packs = onlyRemaining ? Math.max(0, pmax - cur) : pmax;   // 남은 명분
@@ -998,7 +1011,7 @@ function renderTrade() {
       s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length, 0);
 
     html += `<div class="all-summary">👥 담당 ${groups.length}명 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료
-      <div class="all-sub">담당 재료는 ${PARTY_SIZE}명분 · '${SELF_ASSIGNEE}'는 1인분</div></div>`;
+      <div class="all-sub">담당 4명이 ${PARTY_SIZE}명분씩 제작 · '${SELF_ASSIGNEE}'는 각 개인이 1인분씩 구매</div></div>`;
     html += groups.map(g => {
       const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length;
       const allDone = doneCnt === g.items.length;
@@ -1015,17 +1028,27 @@ function renderTrade() {
       const ordered = applyOrder(oKey, sorted);
       matOrder[oKey] = ordered.map(({ m }) => m.n);          // 현재 순서 기억
       const rows = ordered
-        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey))
+        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey, isSelf))
         .join("");
+      // 각자(개인 구매)는 총 구매비용과 시세 조회 버튼을 카드에 표시
+      let buyHead = "";
+      if (isSelf) {
+        const known = ordered.filter(({ m }) => priceOf(m.n)?.price != null);
+        const cost = known.reduce((s, { m }) => s + priceOf(m.n).price * m.q * partyMaxOf(m.n), 0);
+        buyHead = `${cost > 0 ? `<span class="raw-cost">약 ${cost.toLocaleString()}G</span>` : ""}
+          <button class="raw-price-btn" data-buygroup="1" ${priceLoading === "각자" ? "disabled" : ""}>
+            ${priceLoading === "각자" ? "⏳" : "💰 시세"}</button>`;
+      }
       return `
       <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-who="${g.who.name}">
         <div class="tier-head">
           <div>
             <div class="tier-title"><span class="t-badge">${g.who.icon}</span>${g.who.name}</div>
-            <div class="tier-sub">${skillNames.join(" · ")} · 재료 ${g.items.length}종
+            <div class="tier-sub">${isSelf ? "개인 구매" : skillNames.join(" · ")} · 재료 ${g.items.length}종
               <span class="who-per ${isSelf ? "one" : ""}">${isSelf ? "1인분" : PARTY_SIZE + "명분"}</span></div>
           </div>
           <div class="tier-right">
+            ${buyHead}
             <span class="tier-prog">${doneCnt}/${g.items.length}</span>
             <span class="tier-arrow">▶</span>
           </div>
@@ -1049,8 +1072,17 @@ function renderTrade() {
       const ordered = applyOrder(oKey, g.items);
       matOrder[oKey] = ordered.map(({ m }) => m.n);
       const rows = ordered
-        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey))
+        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey, isSelf))
         .join("");
+      // 각자(개인 구매)는 총 구매비용과 시세 조회 버튼을 카드에 표시
+      let buyHead = "";
+      if (isSelf) {
+        const known = ordered.filter(({ m }) => priceOf(m.n)?.price != null);
+        const cost = known.reduce((s, { m }) => s + priceOf(m.n).price * m.q * partyMaxOf(m.n), 0);
+        buyHead = `${cost > 0 ? `<span class="raw-cost">약 ${cost.toLocaleString()}G</span>` : ""}
+          <button class="raw-price-btn" data-buygroup="1" ${priceLoading === "각자" ? "disabled" : ""}>
+            ${priceLoading === "각자" ? "⏳" : "💰 시세"}</button>`;
+      }
       return `
       <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-skill="${g.skill}" data-all="1">
         <div class="tier-head">
@@ -1179,6 +1211,22 @@ function renderTrade() {
         tradeOpen[key] = !tradeOpen[key];
       }
       renderTrade();
+    });
+  });
+
+  // 각자(개인 구매) 품목 시세 조회
+  tiersEl.querySelectorAll('.raw-price-btn[data-buygroup]').forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      if (priceLoading) return;
+      const grp = groupByAssignee(TRADE_POSTS).find(g => g.who.name === SELF_ASSIGNEE);
+      if (!grp) return;
+      priceLoading = SELF_ASSIGNEE;
+      renderTrade();
+      const limited = await loadPricesFor(grp.items.map(({ m }) => m.n));
+      priceLoading = null;
+      renderTrade();
+      if (limited) alert("넥슨 API 요청 한도에 걸렸어요. 잠시 후 다시 눌러주세요.");
     });
   });
 
