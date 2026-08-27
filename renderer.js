@@ -431,12 +431,36 @@ async function loadPricesFor(names) {
 let matOrder = JSON.parse(localStorage.getItem("erinn-mat-order") || "{}");
 function saveMatOrder() { localStorage.setItem("erinn-mat-order", JSON.stringify(matOrder)); }
 
+// 짧게 떴다 사라지는 안내
+let toastTimer = null;
+function toast(msg) {
+  let el = document.getElementById("app-toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "app-toast";
+    el.className = "app-toast";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 1400);
+}
+
 // 저장된 순서대로 정렬 (없는 건 뒤에 원래 순서 유지)
 function applyOrder(key, items) {
   const saved = matOrder[key];
   if (!saved) return items;
   const idx = n => { const i = saved.indexOf(n); return i < 0 ? 9999 : i; };
   return [...items].sort((a, b) => idx(a.m.n) - idx(b.m.n));
+}
+
+// 사용자가 바꾼 순서인지 (기본 순서와 다른지)
+function orderChanged(key, defaultItems) {
+  const saved = matOrder[key];
+  if (!saved) return false;
+  const def = defaultItems.map(({ m }) => m.n);
+  return saved.join("|") !== def.join("|");
 }
 
 // 한 칸 위/아래로 이동
@@ -544,7 +568,8 @@ function postProgress(post) {
 }
 
 // 재료 한 줄 (모든 보기 공용). fromLabel을 주면 출처(교역소·티어)를 배지로 표시
-function matRowHtml(post, ti, m, fromLabel, orderKey, showBuy) {
+function matRowHtml(post, ti, m, fromLabel, orderKey) {
+  const showBuy = assigneeOf(m.n).name === SELF_ASSIGNEE;   // 각자 품목이면 구매 시세 표시
   const pmax = partyMaxOf(m.n);                                  // 준비할 인원수 (각자=1)
   const cur  = Math.min(matCount(post.id, ti.t, m.n), pmax);     // 완성한 명분
   const done = cur >= pmax;
@@ -1028,7 +1053,7 @@ function renderTrade() {
       const ordered = applyOrder(oKey, sorted);
       matOrder[oKey] = ordered.map(({ m }) => m.n);          // 현재 순서 기억
       const rows = ordered
-        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey, isSelf))
+        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey))
         .join("");
       // 각자(개인 구매)는 총 구매비용과 시세 조회 버튼을 카드에 표시
       let buyHead = "";
@@ -1048,6 +1073,8 @@ function renderTrade() {
               <span class="who-per ${isSelf ? "one" : ""}">${isSelf ? "1인분" : PARTY_SIZE + "명분"}</span></div>
           </div>
           <div class="tier-right">
+            ${matOrder[oKey] && orderChanged(oKey, sorted)
+              ? `<button class="order-reset" data-okey="${oKey}" title="원래 순서로">↩︎</button>` : ""}
             ${buyHead}
             <span class="tier-prog">${doneCnt}/${g.items.length}</span>
             <span class="tier-arrow">▶</span>
@@ -1072,17 +1099,8 @@ function renderTrade() {
       const ordered = applyOrder(oKey, g.items);
       matOrder[oKey] = ordered.map(({ m }) => m.n);
       const rows = ordered
-        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey, isSelf))
+        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey))
         .join("");
-      // 각자(개인 구매)는 총 구매비용과 시세 조회 버튼을 카드에 표시
-      let buyHead = "";
-      if (isSelf) {
-        const known = ordered.filter(({ m }) => priceOf(m.n)?.price != null);
-        const cost = known.reduce((s, { m }) => s + priceOf(m.n).price * m.q * partyMaxOf(m.n), 0);
-        buyHead = `${cost > 0 ? `<span class="raw-cost">약 ${cost.toLocaleString()}G</span>` : ""}
-          <button class="raw-price-btn" data-buygroup="1" ${priceLoading === "각자" ? "disabled" : ""}>
-            ${priceLoading === "각자" ? "⏳" : "💰 시세"}</button>`;
-      }
       return `
       <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-skill="${g.skill}" data-all="1">
         <div class="tier-head">
@@ -1230,6 +1248,17 @@ function renderTrade() {
     });
   });
 
+  // 순서 초기화
+  tiersEl.querySelectorAll(".order-reset").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      delete matOrder[btn.dataset.okey];
+      saveMatOrder();
+      renderTrade();
+      toast("↩︎ 원래 순서로 되돌렸어요");
+    });
+  });
+
   // 재료 순서 이동 (▲▼)
   tiersEl.querySelectorAll(".tr-move").forEach(box => {
     box.querySelectorAll("button").forEach(btn => {
@@ -1238,6 +1267,7 @@ function renderTrade() {
         const key = box.dataset.key;
         moveMat(key, matOrder[key] || [], box.dataset.mat, parseInt(btn.dataset.dir, 10));
         renderTrade();
+        toast("✓ 순서 저장됨");
       });
     });
   });
