@@ -92,6 +92,25 @@
       <div class="alarm-empty">알람이 없어요.<br><span style="color:#475569">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>
     </div>
 
+    <!-- 매일 할일 -->
+    <div class="alarm-header" style="margin-top:8px">
+      <h2>☀️ 매일 할일 <span id="hw-daily-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
+      <span id="hw-daily-reset" style="font-size:11px;color:#475569"></span>
+    </div>
+    <div id="hw-daily"></div>
+
+    <!-- 주간 할일 -->
+    <div class="alarm-header" style="margin-top:8px">
+      <h2>📅 주간 할일 <span id="hw-weekly-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
+      <span id="hw-weekly-reset" style="font-size:11px;color:#475569"></span>
+    </div>
+    <div id="hw-weekly"></div>
+    <div class="footer-note" style="margin-top:14px">매일 할일은 오전 6시 · 주간 할일은 월요일 오전 6시에 자동 초기화됩니다</div>
+
+  </div>
+
+  <!-- ═══ 탭: 작업 ═══ -->
+  <div class="tab-panel" id="tab-work" style="display:none">
     <!-- 작업 타이머 -->
     <div class="alarm-header" style="margin-top:8px">
       <h2>⚒️ 작업 타이머</h2>
@@ -110,26 +129,6 @@
     <div id="market-updated" style="text-align:center;font-size:11px;color:#334155;margin-top:4px;margin-bottom:8px"></div>
   </div>
 
-  <!-- ═══ 탭: 매일 할일 ═══ -->
-  <div class="tab-panel" id="tab-daily" style="display:none">
-    <div class="alarm-header">
-      <h2>☀️ 매일 할일 <span id="hw-daily-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
-      <span id="hw-daily-reset" style="font-size:11px;color:#475569"></span>
-    </div>
-    <div id="hw-daily"></div>
-    <div class="footer-note" style="margin-top:20px">매일 오전 6시에 자동으로 초기화됩니다</div>
-  </div>
-
-  <!-- ═══ 탭: 주간 할일 ═══ -->
-  <div class="tab-panel" id="tab-weekly" style="display:none">
-    <div class="alarm-header">
-      <h2>📅 주간 할일 <span id="hw-weekly-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
-      <span id="hw-weekly-reset" style="font-size:11px;color:#475569"></span>
-    </div>
-    <div id="hw-weekly"></div>
-    <div class="footer-note" style="margin-top:20px">매주 월요일 오전 6시에 자동으로 초기화됩니다</div>
-  </div>
-
   <!-- ═══ 탭: 교역 ═══ -->
   <div class="tab-panel" id="tab-trade" style="display:none">
     <div class="alarm-header">
@@ -146,11 +145,8 @@
   <button class="tab-btn active" data-tab="home">
     <span class="tab-ico">🏠</span><span>홈</span>
   </button>
-  <button class="tab-btn" data-tab="daily">
-    <span class="tab-ico">☀️</span><span>매일</span>
-  </button>
-  <button class="tab-btn" data-tab="weekly">
-    <span class="tab-ico">📅</span><span>주간</span>
+  <button class="tab-btn" data-tab="work">
+    <span class="tab-ico">⚒️</span><span>작업</span>
   </button>
   <button class="tab-btn" data-tab="trade">
     <span class="tab-ico">🚢</span><span>교역</span>
