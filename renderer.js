@@ -477,10 +477,15 @@ function matRowHtml(post, ti, m, fromLabel) {
   const unit = pmax === 1 ? "1인분" : `${pmax}명분`;
   const rc   = CRAFT_RECIPES[m.n];
 
-  // 1인분 수량 + (N명 전체 수량) 을 함께 표기
-  const both = (q) => pmax === 1
-    ? `${q.toLocaleString()}개`
-    : `${q.toLocaleString()}개<span class="q4">${pmax}명 ${(q * pmax).toLocaleString()}개</span>`;
+  // 필요량은 담당 인원수 기준(각자=1인분), 남은 수량도 함께 표기
+  const both = (q) => {
+    const total  = q * pmax;
+    const remain = q * (pmax - cur);
+    const badge = remain === 0
+      ? `<span class="q-done">완료</span>`
+      : `<span class="q4">남은 ${remain.toLocaleString()}개</span>`;
+    return `${total.toLocaleString()}개${badge}`;
+  };
 
   let recipe;
   if (rc && rc.ratio) {
@@ -1019,9 +1024,8 @@ function renderTrade() {
               ${g.per ? `<span class="raw-per ${g.per === "1인분" ? "one" : ""}">${g.per}</span>` : ""}</span>
             <span class="raw-group-n">${g.rows.length}종</span>
           </div>
-          <div class="raw-list">${g.rows.map(([n, [tot, one]]) =>
-            `<div class="raw-row"><span>${n}</span><span class="raw-q"><b>${tot.toLocaleString()}개</b>${
-              tot !== one ? `<span class="raw-one">1인 ${one.toLocaleString()}개</span>` : ""}</span></div>`).join("")}</div>
+          <div class="raw-list">${g.rows.map(([n, [tot]]) =>
+            `<div class="raw-row"><span>${n}</span><b>${tot.toLocaleString()}개</b></div>`).join("")}</div>
         </div>`).join("")}
     ${dupNames.length
       ? `<div class="raw-note">※ ${dupNames.slice(0, 3).join(", ")}${dupNames.length > 3 ? " 등" : ""}은 여러 영역에서 쓰여 나뉘어 표시됩니다 (합치면 총량)</div>`
