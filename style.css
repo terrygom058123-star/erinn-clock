@@ -484,6 +484,18 @@ body {
 .btn-mini-clock:hover { border-color: #475569; }
 .btn-mini-clock.on { border-color: #818cf8; color: #818cf8; }
 
+.hw-head-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.hw-edit {
+  background: none; border: none; color: #475569; cursor: pointer;
+  font-size: 14px; padding: 4px 2px; flex-shrink: 0; line-height: 1;
+}
+.hw-edit:active { color: #cbd5e1; }
+.hw-empty {
+  text-align: center; color: #475569; font-size: 13px;
+  padding: 18px 0; line-height: 1.7;
+}
+.hw-empty b { color: #818cf8; }
+
 /* 마비노기 숙제 */
 .hw-group-label { font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 8px; }
 .hw-group-label span { color: #475569; font-weight: 400; }

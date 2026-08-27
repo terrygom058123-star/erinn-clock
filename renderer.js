@@ -130,19 +130,28 @@ function startTaskById(id) {
 renderTasks();
 
 // ─── 마비노기 숙제 (매일 6시 / 주간 월요일 6시 리셋) ─────────
-const HW_DAILY = [
-  "블루밍",
-  "베테랑/빛구/로드(크리스탈)",
-  "탐험대 보내기",
-  "리플레이",
-  "탈농",
-];
-const HW_WEEKLY = [
-  { name: "네아르", target: 10 },
-  { name: "크롬",   target: 10 },
-  { name: "글매",   target: 3  },
-  { name: "브리",   target: 7  },
-];
+// ─── 매일/주간 할일 (사용자가 직접 추가·수정) ───
+const DEFAULT_HW = {
+  daily: [
+    { id: "d1", name: "블루밍" },
+    { id: "d2", name: "베테랑/빛구/로드(크리스탈)" },
+    { id: "d3", name: "탐험대 보내기" },
+    { id: "d4", name: "리플레이" },
+    { id: "d5", name: "탈농" },
+  ],
+  weekly: [
+    { id: "w1", name: "네아르", target: 10 },
+    { id: "w2", name: "크롬",   target: 10 },
+    { id: "w3", name: "글매",   target: 3  },
+    { id: "w4", name: "브리",   target: 7  },
+  ],
+};
+let hwList = JSON.parse(localStorage.getItem("erinn-hw-list") || "null")
+          || JSON.parse(JSON.stringify(DEFAULT_HW));
+if (!hwList.daily)  hwList.daily = [];
+if (!hwList.weekly) hwList.weekly = [];
+function saveHwList() { localStorage.setItem("erinn-hw-list", JSON.stringify(hwList)); }
+function newHwId() { return "h" + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
 
 // 마비노기 리셋 기준 키 (오전 6시 경계, 주간은 월요일) — 로컬(한국) 시간 기준
 function localKey(d) {
@@ -180,63 +189,76 @@ function renderHomework() {
   const weeklyEl = document.getElementById("hw-weekly");
   if (!dailyEl) return;
 
-  // 매일 할일 (체크박스)
-  dailyEl.innerHTML = HW_DAILY.map((name, i) => {
-    const done = !!homework.daily[i];
-    return `
-    <div class="hw-item ${done ? "done" : ""}" data-type="daily" data-idx="${i}">
-      <div class="hw-check">${done ? "✓" : ""}</div>
-      <div class="hw-name">${name}</div>
-    </div>`;
-  }).join("");
+  // ── 매일 할일 (체크) ──
+  dailyEl.innerHTML = hwList.daily.length === 0
+    ? `<div class="hw-empty">할일이 없어요. <b>+ 추가</b>를 눌러 만들어 보세요.</div>`
+    : hwList.daily.map(it => {
+        const done = !!homework.daily[it.id];
+        return `
+        <div class="hw-item ${done ? "done" : ""}" data-kind="daily" data-id="${it.id}">
+          <div class="hw-check">${done ? "✓" : ""}</div>
+          <div class="hw-name">${it.name}</div>
+          <button class="hw-edit" data-kind="daily" data-id="${it.id}" title="수정">✏️</button>
+        </div>`;
+      }).join("");
 
-  // 주간 할일 (카운터)
-  weeklyEl.innerHTML = HW_WEEKLY.map((item, i) => {
-    const cur  = homework.weekly[i] || 0;
-    const done = cur >= item.target;
-    return `
-    <div class="hw-item ${done ? "done" : ""}" data-idx="${i}">
-      <div class="hw-check">${done ? "✓" : ""}</div>
-      <div class="hw-name">${item.name}</div>
-      <div class="hw-counter-right">
-        <button class="hw-cnt-btn hw-minus" data-idx="${i}">−</button>
-        <div class="hw-cnt-val">${cur} / ${item.target}릴</div>
-        <button class="hw-cnt-btn hw-plus" data-idx="${i}">+</button>
-      </div>
-    </div>`;
-  }).join("");
+  // ── 주간 할일 (횟수 카운터) ──
+  weeklyEl.innerHTML = hwList.weekly.length === 0
+    ? `<div class="hw-empty">할일이 없어요. <b>+ 추가</b>를 눌러 만들어 보세요.</div>`
+    : hwList.weekly.map(it => {
+        const cur  = homework.weekly[it.id] || 0;
+        const done = cur >= it.target;
+        return `
+        <div class="hw-item ${done ? "done" : ""}" data-id="${it.id}">
+          <div class="hw-check">${done ? "✓" : ""}</div>
+          <div class="hw-name">${it.name}</div>
+          <div class="hw-counter-right">
+            <button class="hw-cnt-btn hw-minus" data-id="${it.id}">−</button>
+            <div class="hw-cnt-val">${cur} / ${it.target}</div>
+            <button class="hw-cnt-btn hw-plus" data-id="${it.id}">+</button>
+          </div>
+          <button class="hw-edit" data-kind="weekly" data-id="${it.id}" title="수정">✏️</button>
+        </div>`;
+      }).join("");
 
-  // 매일 체크 토글
+  // 매일 체크 토글 (수정 버튼 제외)
   dailyEl.querySelectorAll(".hw-item").forEach(el => {
     el.addEventListener("click", () => {
-      const idx = el.dataset.idx;
-      homework.daily[idx] = !homework.daily[idx];
+      const id = el.dataset.id;
+      homework.daily[id] = !homework.daily[id];
       saveHomework(); renderHomework();
     });
   });
-  // 주간 카운터 +/-
+  // 주간 카운터
   weeklyEl.querySelectorAll(".hw-plus").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
-      const i = btn.dataset.idx;
-      homework.weekly[i] = Math.min(HW_WEEKLY[i].target, (homework.weekly[i] || 0) + 1);
+      const it = hwList.weekly.find(x => x.id === btn.dataset.id);
+      homework.weekly[it.id] = Math.min(it.target, (homework.weekly[it.id] || 0) + 1);
       saveHomework(); renderHomework();
     });
   });
   weeklyEl.querySelectorAll(".hw-minus").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
-      const i = btn.dataset.idx;
-      homework.weekly[i] = Math.max(0, (homework.weekly[i] || 0) - 1);
+      const id = btn.dataset.id;
+      homework.weekly[id] = Math.max(0, (homework.weekly[id] || 0) - 1);
       saveHomework(); renderHomework();
     });
   });
+  // 수정 버튼
+  [dailyEl, weeklyEl].forEach(box => box.querySelectorAll(".hw-edit").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      openHwModal(btn.dataset.kind, btn.dataset.id);
+    });
+  }));
 
-  // 진행 카운트 표시
-  const dDone = HW_DAILY.filter((_, i) => homework.daily[i]).length;
-  const wDone = HW_WEEKLY.filter((it, i) => (homework.weekly[i] || 0) >= it.target).length;
-  document.getElementById("hw-daily-count").textContent  = `${dDone}/${HW_DAILY.length}`;
-  document.getElementById("hw-weekly-count").textContent = `${wDone}/${HW_WEEKLY.length}`;
+  // 진행 카운트
+  const dDone = hwList.daily.filter(it => homework.daily[it.id]).length;
+  const wDone = hwList.weekly.filter(it => (homework.weekly[it.id] || 0) >= it.target).length;
+  document.getElementById("hw-daily-count").textContent  = `${dDone}/${hwList.daily.length}`;
+  document.getElementById("hw-weekly-count").textContent = `${wDone}/${hwList.weekly.length}`;
 
   // 매일 리셋까지 남은 시간 (오전 6시)
   const dNote = document.getElementById("hw-daily-reset");
@@ -249,24 +271,73 @@ function renderHomework() {
     const mins = Math.floor(((next6 - now) % 3600000) / 60000);
     dNote.textContent = `리셋까지 ${hrs}시간 ${mins}분`;
   }
-
   // 주간 리셋까지 남은 시간 (월요일 오전 6시)
   const wNote = document.getElementById("hw-weekly-reset");
-  if (wNote) {
-    const now = new Date();
-    const nextMon = new Date(now);
-    nextMon.setHours(6, 0, 0, 0);
-    // 다음 월요일 오전 6시까지
-    let addDays = (8 - now.getDay()) % 7; // 월요일(1)까지 남은 일수
-    if (addDays === 0 && now.getHours() >= 6) addDays = 7; // 오늘이 월요일이고 6시 지났으면 다음주
-    if (now.getDay() === 1 && now.getHours() < 6) addDays = 0; // 월요일 6시 전이면 오늘
-    nextMon.setDate(nextMon.getDate() + addDays);
-    const diff = nextMon - now;
-    const d = Math.floor(diff / 86400000);
-    const h = Math.floor((diff % 86400000) / 3600000);
-    wNote.textContent = d > 0 ? `리셋까지 ${d}일 ${h}시간` : `리셋까지 ${h}시간`;
-  }
+  if (wNote) wNote.textContent = tradeResetLeft().replace("후 초기화", "후 리셋");
 }
+
+// ── 할일 추가/수정 모달 ──
+let hwEditing = null;   // { kind, id } — id 없으면 새로 추가
+
+function openHwModal(kind, id) {
+  hwEditing = { kind, id: id || null };
+  const item = id ? hwList[kind].find(x => x.id === id) : null;
+  document.getElementById("hw-modal-title").textContent =
+    (id ? "할일 수정" : "할일 추가") + (kind === "daily" ? " · 매일" : " · 주간");
+  document.getElementById("hw-name-input").value = item ? item.name : "";
+  const tWrap = document.getElementById("hw-target-wrap");
+  tWrap.style.display = kind === "weekly" ? "block" : "none";
+  document.getElementById("hw-target-input").value = item ? item.target : 1;
+  document.getElementById("btn-hw-delete").style.display = id ? "block" : "none";
+  document.getElementById("hw-modal").classList.add("open");
+  setTimeout(() => document.getElementById("hw-name-input").focus(), 50);
+}
+function closeHwModal() {
+  document.getElementById("hw-modal").classList.remove("open");
+  hwEditing = null;
+}
+
+document.getElementById("btn-hw-add-daily")?.addEventListener("click", () => openHwModal("daily"));
+document.getElementById("btn-hw-add-weekly")?.addEventListener("click", () => openHwModal("weekly"));
+document.getElementById("hw-modal-close")?.addEventListener("click", closeHwModal);
+document.getElementById("hw-modal")?.addEventListener("click", e => {
+  if (e.target === e.currentTarget) closeHwModal();
+});
+
+document.getElementById("btn-hw-save")?.addEventListener("click", () => {
+  if (!hwEditing) return;
+  const name = document.getElementById("hw-name-input").value.trim();
+  if (!name) { alert("이름을 입력해주세요."); return; }
+  const { kind, id } = hwEditing;
+  const target = kind === "weekly"
+    ? Math.max(1, parseInt(document.getElementById("hw-target-input").value, 10) || 1) : undefined;
+
+  if (id) {
+    const it = hwList[kind].find(x => x.id === id);
+    it.name = name;
+    if (kind === "weekly") it.target = target;
+  } else {
+    const nid = newHwId();
+    hwList[kind].push(kind === "weekly" ? { id: nid, name, target } : { id: nid, name });
+  }
+  saveHwList();
+  closeHwModal();
+  renderHomework();
+  toast("✓ 저장됨");
+});
+
+document.getElementById("btn-hw-delete")?.addEventListener("click", () => {
+  if (!hwEditing?.id) return;
+  const { kind, id } = hwEditing;
+  const it = hwList[kind].find(x => x.id === id);
+  if (!confirm(`'${it.name}' 을(를) 지울까요?`)) return;
+  hwList[kind] = hwList[kind].filter(x => x.id !== id);
+  delete homework[kind][id];
+  saveHwList(); saveHomework();
+  closeHwModal();
+  renderHomework();
+  toast("✓ 삭제됨");
+});
 renderHomework();
 // 1분마다 리셋 시점 체크
 setInterval(renderHomework, 60000);

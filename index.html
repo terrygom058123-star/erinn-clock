@@ -95,14 +95,20 @@
     <!-- 매일 할일 -->
     <div class="alarm-header" style="margin-top:8px">
       <h2>☀️ 매일 할일 <span id="hw-daily-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
-      <span id="hw-daily-reset" style="font-size:11px;color:#475569"></span>
+      <div class="hw-head-right">
+        <span id="hw-daily-reset" style="font-size:11px;color:#475569"></span>
+        <button class="btn-add" id="btn-hw-add-daily" style="font-size:12px;padding:6px 12px">+ 추가</button>
+      </div>
     </div>
     <div id="hw-daily"></div>
 
     <!-- 주간 할일 -->
     <div class="alarm-header" style="margin-top:8px">
       <h2>📅 주간 할일 <span id="hw-weekly-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
-      <span id="hw-weekly-reset" style="font-size:11px;color:#475569"></span>
+      <div class="hw-head-right">
+        <span id="hw-weekly-reset" style="font-size:11px;color:#475569"></span>
+        <button class="btn-add" id="btn-hw-add-weekly" style="font-size:12px;padding:6px 12px">+ 추가</button>
+      </div>
     </div>
     <div id="hw-weekly"></div>
     <div class="footer-note" style="margin-top:14px">매일 할일은 오전 6시 · 주간 할일은 월요일 오전 6시에 자동 초기화됩니다</div>
@@ -172,6 +178,29 @@
       <div class="form-hint">에린 1시간 = 현실 90초 / 에린 1일 = 현실 36분</div>
     </div>
     <button class="btn-confirm" id="btn-confirm">알람 추가</button>
+  </div>
+</div>
+
+<!-- 할일 추가/수정 모달 -->
+<div class="modal-backdrop" id="hw-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 id="hw-modal-title">할일 추가</h3>
+      <button id="hw-modal-close" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div class="form-group">
+      <label>할일 이름</label>
+      <input type="text" id="hw-name-input" placeholder="예: 블루밍, 네아르" />
+    </div>
+    <div class="form-group" id="hw-target-wrap">
+      <label>목표 횟수</label>
+      <input type="number" id="hw-target-input" inputmode="numeric" min="1" value="1" />
+      <div class="form-hint">몇 번 하면 완료인지 (예: 네아르 10회)</div>
+    </div>
+    <button class="btn-confirm" id="btn-hw-save">저장</button>
+    <button class="btn-confirm" id="btn-hw-delete"
+            style="background:#7f1d1d;margin-top:8px;display:none">삭제</button>
   </div>
 </div>
 
