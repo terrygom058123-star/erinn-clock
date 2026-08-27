@@ -285,7 +285,7 @@ const CRAFT_RECIPES = {
   "동괴":     { skill: "제련", mats: [{ n: "동광석 조각", q: 5 }] },
   "은괴":     { skill: "제련", mats: [{ n: "은광석 조각", q: 5 }] },
   "금괴":     { skill: "제련", mats: [{ n: "금광석 조각", q: 5 }] },
-  "미스릴괴": { skill: "제련", mats: [{ n: "미스릴 조각", q: 5 }] },
+  "미스릴괴": { skill: "제련", mats: [{ n: "미스릴광석 조각", q: 5 }] },
 
   // ── 포션 조제 ──
   "생명력 500 포션":   { skill: "포션 조제", mats: [{ n: "생명력 300 포션", q: 1 }, { n: "네잎 클로버", q: 1 }, { n: "물이 든 병", q: 1 }] },
@@ -403,9 +403,84 @@ let tradePost  = localStorage.getItem("erinn-trade-post") || TRADE_POSTS[0].id;
 let tradeOpen  = {};   // 펼쳐진 티어
 let tradeRemainOnly = localStorage.getItem("erinn-trade-remain") === "1";
 let rawOpen = localStorage.getItem("erinn-raw-open") === "1";   // 원재료 총합 펼침 (기본 닫힘)
+// ─── 교역 ↔ 경매장 연결: 원재료 시세 ───
+let priceCache = JSON.parse(localStorage.getItem("erinn-price-cache") || "{}");
+const PRICE_TTL = 60 * 60 * 1000;                 // 1시간 유효
+let priceLoading = null;                          // 조회 중인 그룹 키
+
+function priceOf(name) {
+  const c = priceCache[name];
+  return (c && Date.now() - c.at < PRICE_TTL) ? c : null;
+}
+
+// 이 그룹 재료들의 시세를 순차 조회 (API 한도 보호)
+async function loadPricesFor(names) {
+  let limited = false;
+  for (const n of names) {
+    if (priceOf(n)) continue;                     // 캐시 유효하면 건너뜀
+    const r = await fetchListing(n);
+    if (r.status === "ratelimit") { limited = true; break; }
+    if (r.status === "ok") priceCache[n] = { price: r.lowestNow, at: Date.now() };
+    await sleep(450);
+  }
+  localStorage.setItem("erinn-price-cache", JSON.stringify(priceCache));
+  return limited;
+}
+
+// 사용자가 배치한 재료 순서  { 그룹키: [재료명, ...] }
+let matOrder = JSON.parse(localStorage.getItem("erinn-mat-order") || "{}");
+function saveMatOrder() { localStorage.setItem("erinn-mat-order", JSON.stringify(matOrder)); }
+
+// 저장된 순서대로 정렬 (없는 건 뒤에 원래 순서 유지)
+function applyOrder(key, items) {
+  const saved = matOrder[key];
+  if (!saved) return items;
+  const idx = n => { const i = saved.indexOf(n); return i < 0 ? 9999 : i; };
+  return [...items].sort((a, b) => idx(a.m.n) - idx(b.m.n));
+}
+
+// 한 칸 위/아래로 이동
+function moveMat(key, names, matName, dir) {
+  const arr = [...names];
+  const i = arr.indexOf(matName);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  matOrder[key] = arr;
+  saveMatOrder();
+}
+
 let tradeView = localStorage.getItem("erinn-trade-view") || "who";   // who | all | route
 if (["skill", "tier"].includes(tradeView)) tradeView = "who";   // 없어진 보기는 담당별로
 function saveTrade() { localStorage.setItem("erinn-trade-party", JSON.stringify(tradeState)); }
+
+// 교역 주간 초기화 (숙제와 동일하게 월요일 오전 6시 기준)
+function syncTradeWeek() {
+  const { weekKey } = hwPeriodKeys();
+  if (tradeState.__week !== weekKey) {
+    tradeState = { __week: weekKey };          // 지난주 진행 비우기
+    localStorage.setItem("erinn-trade-party", JSON.stringify(tradeState));
+  }
+  if (routeState.__week !== weekKey) {
+    routeState = { __week: weekKey };
+    localStorage.setItem("erinn-route", JSON.stringify(routeState));
+  }
+}
+
+// 다음 주간 초기화까지 남은 시간
+function tradeResetLeft() {
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(6, 0, 0, 0);
+  let add = (8 - now.getDay()) % 7;                       // 다음 월요일까지
+  if (add === 0 && now.getHours() >= 6) add = 7;
+  if (now.getDay() === 1 && now.getHours() < 6) add = 0;
+  next.setDate(next.getDate() + add);
+  const diff = next - now;
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  return d > 0 ? `${d}일 ${h}시간 후 초기화` : `${h}시간 후 초기화`;
+}
 
 // 이 재료를 몇 명분 준비해야 하는지 ('각자'는 본인 것 1인분만)
 function partyMaxOf(matName) {
@@ -469,7 +544,7 @@ function postProgress(post) {
 }
 
 // 재료 한 줄 (모든 보기 공용). fromLabel을 주면 출처(교역소·티어)를 배지로 표시
-function matRowHtml(post, ti, m, fromLabel) {
+function matRowHtml(post, ti, m, fromLabel, orderKey) {
   const pmax = partyMaxOf(m.n);                                  // 준비할 인원수 (각자=1)
   const cur  = Math.min(matCount(post.id, ti.t, m.n), pmax);     // 완성한 명분
   const done = cur >= pmax;
@@ -505,13 +580,17 @@ function matRowHtml(post, ti, m, fromLabel) {
   }
 
   const tierTag = fromLabel ? `<div class="tr-from">${fromLabel}</div>` : "";
+  const mover = orderKey
+    ? `<span class="tr-move" data-key="${orderKey}" data-mat="${m.n}">
+         <button data-dir="-1" title="위로">▲</button><button data-dir="1" title="아래로">▼</button>
+       </span>` : "";
   const btns = Array.from({ length: pmax + 1 }, (_, i) =>
     `<button class="${i === cur ? "on" : ""}" data-n="${i}">${i}</button>`).join("");
 
   return `
   <div class="tr-mat ${done ? "done" : ""}">
     <div class="tr-mat-head">
-      <span class="tr-mat-name">${done ? "✅ " : ""}${m.n}</span>
+      <span class="tr-mat-name">${mover}${done ? "✅ " : ""}${m.n}</span>
       <span class="tr-mat-count">
         <span class="tr-cnt-1"><b>${cur}</b> / ${unit} 완성</span>
         <span class="tr-cnt-4">${(m.q * cur).toLocaleString()} / ${(m.q * pmax).toLocaleString()}개</span>
@@ -845,6 +924,7 @@ function renderTrade() {
   const postsEl = document.getElementById("trade-posts");
   const tiersEl = document.getElementById("trade-tiers");
   if (!postsEl) return;
+  syncTradeWeek();          // 월요일 오전 6시 지나면 자동 초기화
 
   // 교역소 선택 버튼 (전체 통합 보기에서는 숨김)
   postsEl.style.display = "none";   // 모든 보기가 교역소 통합이라 선택 버튼 불필요
@@ -931,8 +1011,11 @@ function renderTrade() {
       });
       const skillNames = [...new Set(sorted.map(({ m }) => CRAFT_RECIPES[m.n]?.skill || "직접 수급"))];
       const isSelf = g.who.name === SELF_ASSIGNEE;
-      const rows = sorted
-        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`))
+      const oKey = `who|${g.who.name}`;
+      const ordered = applyOrder(oKey, sorted);
+      matOrder[oKey] = ordered.map(({ m }) => m.n);          // 현재 순서 기억
+      const rows = ordered
+        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey))
         .join("");
       return `
       <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-who="${g.who.name}">
@@ -962,8 +1045,11 @@ function renderTrade() {
       const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length;
       const allDone = doneCnt === g.items.length;
       const open = !!tradeOpen[`all|skill|${g.skill}`];   // 기본 닫힘
-      const rows = g.items
-        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`))
+      const oKey = `skill|${g.skill}`;
+      const ordered = applyOrder(oKey, g.items);
+      matOrder[oKey] = ordered.map(({ m }) => m.n);
+      const rows = ordered
+        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey))
         .join("");
       return `
       <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-skill="${g.skill}" data-all="1">
@@ -1022,10 +1108,25 @@ function renderTrade() {
           <div class="raw-group-head">
             <span>${g.icon || SKILL_ICON[g.skill] || "🔧"} ${g.skill}
               ${g.per ? `<span class="raw-per ${g.per === "1인분" ? "one" : ""}">${g.per}</span>` : ""}</span>
-            <span class="raw-group-n">${g.rows.length}종</span>
+            <span class="raw-group-right">
+              ${(() => {
+                const known = g.rows.filter(([n]) => priceOf(n)?.price != null);
+                if (!known.length) return "";
+                const cost = known.reduce((s, [n, [tot]]) => s + priceOf(n).price * tot, 0);
+                return `<span class="raw-cost">약 ${cost.toLocaleString()}G</span>`;
+              })()}
+              <button class="raw-price-btn" data-group="${g.skill}"
+                ${priceLoading === g.skill ? "disabled" : ""}>${priceLoading === g.skill ? "⏳" : "💰 시세"}</button>
+              <span class="raw-group-n">${g.rows.length}종</span>
+            </span>
           </div>
-          <div class="raw-list">${g.rows.map(([n, [tot]]) =>
-            `<div class="raw-row"><span>${n}</span><b>${tot.toLocaleString()}개</b></div>`).join("")}</div>
+          <div class="raw-list">${g.rows.map(([n, [tot]]) => {
+            const pc = priceOf(n);
+            const sub = pc == null ? ""
+              : pc.price == null ? `<span class="raw-price none">매물 없음</span>`
+              : `<span class="raw-price">개당 ${pc.price.toLocaleString()}G · 총 ${(pc.price * tot).toLocaleString()}G</span>`;
+            return `<div class="raw-row"><span class="raw-name">${n}${sub}</span><b>${tot.toLocaleString()}개</b></div>`;
+          }).join("")}</div>
         </div>`).join("")}
     ${dupNames.length
       ? `<div class="raw-note">※ ${dupNames.slice(0, 3).join(", ")}${dupNames.length > 3 ? " 등" : ""}은 여러 영역에서 쓰여 나뉘어 표시됩니다 (합치면 총량)</div>`
@@ -1038,6 +1139,21 @@ function renderTrade() {
     rawOpen = !rawOpen;
     localStorage.setItem("erinn-raw-open", rawOpen ? "1" : "0");
     renderTrade();
+  });
+
+  tiersEl.querySelectorAll(".raw-price-btn").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      const gname = btn.dataset.group;
+      const grp = rawGroups.find(x => x.skill === gname);
+      if (!grp || priceLoading) return;
+      priceLoading = gname;
+      renderTrade();
+      const limited = await loadPricesFor(grp.rows.map(([n]) => n));
+      priceLoading = null;
+      renderTrade();
+      if (limited) alert("넥슨 API 요청 한도에 걸렸어요. 잠시 후 다시 눌러주세요.");
+    });
   });
 
   document.getElementById("btn-raw-toggle")?.addEventListener("click", e => {
@@ -1063,6 +1179,18 @@ function renderTrade() {
         tradeOpen[key] = !tradeOpen[key];
       }
       renderTrade();
+    });
+  });
+
+  // 재료 순서 이동 (▲▼)
+  tiersEl.querySelectorAll(".tr-move").forEach(box => {
+    box.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        const key = box.dataset.key;
+        moveMat(key, matOrder[key] || [], box.dataset.mat, parseInt(btn.dataset.dir, 10));
+        renderTrade();
+      });
     });
   });
 

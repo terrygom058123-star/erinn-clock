@@ -410,6 +410,27 @@ body {
   background: #0f172a; border-radius: 8px; padding: 6px 10px; margin-bottom: 2px;
   font-size: 12px; font-weight: 700; color: #cbd5e1;
 }
+/* 재료 순서 이동 버튼 */
+.tr-move { display: inline-flex; gap: 2px; margin-right: 6px; vertical-align: middle; }
+.tr-move button {
+  background: #0f172a; border: 1px solid #334155; color: #64748b;
+  border-radius: 5px; width: 22px; height: 20px; font-size: 9px;
+  cursor: pointer; line-height: 1; padding: 0;
+}
+.tr-move button:active { background: #334155; color: #cbd5e1; }
+
+/* 원재료 시세 */
+.raw-group-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.raw-price-btn {
+  background: #334155; color: #cbd5e1; border: none; border-radius: 6px;
+  padding: 3px 8px; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.raw-price-btn:disabled { opacity: 0.6; }
+.raw-cost { font-size: 11px; font-weight: 700; color: #fbbf24; white-space: nowrap; }
+.raw-name { display: flex; flex-direction: column; gap: 1px; }
+.raw-price { font-size: 10px; color: #4ade80; }
+.raw-price.none { color: #475569; }
+
 .raw-group-n { font-size: 11px; font-weight: 400; color: #64748b; }
 .raw-list { display: flex; flex-direction: column; }
 .raw-row {
