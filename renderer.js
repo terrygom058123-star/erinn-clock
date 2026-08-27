@@ -397,14 +397,20 @@ const TRADE_POSTS = [
   },
 ];
 
-let tradeState = JSON.parse(localStorage.getItem("erinn-trade") || "{}");
+// 저장 단위: 몇 '명분'을 완성했는지 (0 ~ 담당 인원수)
+let tradeState = JSON.parse(localStorage.getItem("erinn-trade-party") || "{}");
 let tradePost  = localStorage.getItem("erinn-trade-post") || TRADE_POSTS[0].id;
 let tradeOpen  = {};   // 펼쳐진 티어
 let tradeRemainOnly = localStorage.getItem("erinn-trade-remain") === "1";
 let rawOpen = localStorage.getItem("erinn-raw-open") === "1";   // 원재료 총합 펼침 (기본 닫힘)
 let tradeView = localStorage.getItem("erinn-trade-view") || "who";   // who | all | route
 if (["skill", "tier"].includes(tradeView)) tradeView = "who";   // 없어진 보기는 담당별로
-function saveTrade() { localStorage.setItem("erinn-trade", JSON.stringify(tradeState)); }
+function saveTrade() { localStorage.setItem("erinn-trade-party", JSON.stringify(tradeState)); }
+
+// 이 재료를 몇 명분 준비해야 하는지 ('각자'는 본인 것 1인분만)
+function partyMaxOf(matName) {
+  return assigneeOf(matName).name === SELF_ASSIGNEE ? 1 : PARTY_SIZE;
+}
 
 function matKey(postId, tier, matName) { return `${postId}|${tier}|${matName}`; }
 function matCount(postId, tier, matName) { return tradeState[matKey(postId, tier, matName)] || 0; }
@@ -457,57 +463,60 @@ function postProgress(post) {
   let done = 0, total = 0;
   post.tiers.forEach(ti => ti.mats.forEach(m => {
     total++;
-    if (matCount(post.id, ti.t, m.n) >= m.q) done++;
+    if (matCount(post.id, ti.t, m.n) >= partyMaxOf(m.n)) done++;
   }));
   return { done, total };
 }
 
 // 재료 한 줄 (모든 보기 공용). fromLabel을 주면 출처(교역소·티어)를 배지로 표시
-function matRowHtml(post, ti, m, fromLabel, partyQty) {
-  const cur = matCount(post.id, ti.t, m.n);
-  const done = cur >= m.q;
-  const pct = Math.min(100, Math.round((cur / m.q) * 100));
-  const rc = CRAFT_RECIPES[m.n];
+function matRowHtml(post, ti, m, fromLabel) {
+  const pmax = partyMaxOf(m.n);                                  // 준비할 인원수 (각자=1)
+  const cur  = Math.min(matCount(post.id, ti.t, m.n), pmax);     // 완성한 명분
+  const done = cur >= pmax;
+  const pct  = Math.round((cur / pmax) * 100);
+  const unit = pmax === 1 ? "1인분" : `${pmax}명분`;
+  const rc   = CRAFT_RECIPES[m.n];
+
+  // 1인분 수량 + (N명 전체 수량) 을 함께 표기
+  const both = (q) => pmax === 1
+    ? `${q.toLocaleString()}개`
+    : `${q.toLocaleString()}개<span class="q4">${pmax}명 ${(q * pmax).toLocaleString()}개</span>`;
 
   let recipe;
   if (rc && rc.ratio) {
-    // 요리처럼 비율로 만드는 재료
     const ratioStr = recipeMats(m.n).map(d => `${d.n} ${d.q}`).join(" : ");
     recipe = `<div class="tr-mat-recipe"><span class="rc-skill">${rc.skill} ·</span> ${ratioStr} <span class="rc-skill">(비율)</span></div>`;
   } else if (rc) {
     const dir = directMats(m.n, m.q);
-    const dirStr = dir.map(d => `${d.n} ${d.q.toLocaleString()}개`).join(", ");
-    const rawStr = Object.entries(expandToRaw(m.n, m.q))
-      .map(([n, q]) => `${n} ${q.toLocaleString()}개`).join(", ");
-    recipe = `<div class="tr-mat-recipe"><span class="rc-skill">${rc.skill} ·</span> ${dirStr}</div>`;
-    if (rawStr !== dirStr) {
-      recipe += `<div class="tr-mat-raw"><span class="rc-skill">원재료 ·</span> ${rawStr}</div>`;
+    const raw = Object.entries(expandToRaw(m.n, m.q));
+    recipe = `<div class="tr-mat-recipe"><span class="rc-skill">재료 ·</span> ${dir.map(d => `${d.n} ${both(d.q)}`).join(", ")}</div>`;
+    const dirKey = dir.map(d => d.n + d.q).join(",");
+    const rawKey = raw.map(([n, q]) => n + q).join(",");
+    if (dirKey !== rawKey) {
+      recipe += `<div class="tr-mat-raw"><span class="rc-skill">원재료 ·</span> ${raw.map(([n, q]) => `${n} ${both(q)}`).join(", ")}</div>`;
     }
   } else {
     recipe = `<div class="tr-mat-recipe"><span class="rc-skill">직접 수급</span></div>`;
   }
 
   const tierTag = fromLabel ? `<div class="tr-from">${fromLabel}</div>` : "";
+  const btns = Array.from({ length: pmax + 1 }, (_, i) =>
+    `<button class="${i === cur ? "on" : ""}" data-n="${i}">${i}</button>`).join("");
 
   return `
   <div class="tr-mat ${done ? "done" : ""}">
     <div class="tr-mat-head">
       <span class="tr-mat-name">${done ? "✅ " : ""}${m.n}</span>
       <span class="tr-mat-count">
-        <span class="tr-cnt-1"><b>${cur}</b> / ${m.q}</span>
-        ${partyQty ? `<span class="tr-cnt-4">👥 ${PARTY_SIZE}명분 ${partyQty.toLocaleString()}개</span>` : ""}
+        <span class="tr-cnt-1"><b>${cur}</b> / ${unit} 완성</span>
+        <span class="tr-cnt-4">${(m.q * cur).toLocaleString()} / ${(m.q * pmax).toLocaleString()}개</span>
       </span>
     </div>
     ${tierTag}
     ${recipe}
     <div class="tr-bar"><div style="width:${pct}%"></div></div>
-    <div class="tr-ctrl" data-post="${post.id}" data-tier="${ti.t}" data-mat="${m.n}" data-max="${m.q}">
-      <button data-d="-10">−10</button>
-      <button data-d="-1">−1</button>
-      <input type="number" inputmode="numeric" value="${cur}" min="0" max="${m.q}">
-      <button data-d="1">+1</button>
-      <button data-d="10">+10</button>
-      <button class="tr-max" data-d="max">완료</button>
+    <div class="tr-party" data-post="${post.id}" data-tier="${ti.t}" data-mat="${m.n}" data-max="${pmax}">
+      <span class="tr-party-label">완성</span>${btns}<span class="tr-party-unit">명분</span>
     </div>
   </div>`;
 }
@@ -787,19 +796,28 @@ function allRawTotals(onlyRemaining) {
 // mode "assignee" → 담당자 기준 (잠댕이·흑쟈헬스…)
 function rawTotalsBySkill(posts, onlyRemaining, mode = "skill") {
   const list = Array.isArray(posts) ? posts : [posts];
-  const byKey = {};
+  const byKey = {};                  // key → { 재료명: [필요량, 1인분량] }
   const distinct = new Set();
+
   list.forEach(post => post.tiers.forEach(ti => ti.mats.forEach(m => {
-    const need = onlyRemaining ? Math.max(0, m.q - matCount(post.id, ti.t, m.n)) : m.q;
-    if (need <= 0) return;
     const key = mode === "assignee"
       ? assigneeOf(m.n).name
       : (CRAFT_RECIPES[m.n]?.skill || "직접 수급");
-    // 담당별에서는 '각자'(본인 몫)를 뺀 나머지를 4명분으로 계산
-    const mul = (mode === "assignee" && key !== SELF_ASSIGNEE) ? PARTY_SIZE : 1;
+    const pmax  = partyMaxOf(m.n);
+    const cur   = Math.min(matCount(post.id, ti.t, m.n), pmax);
+    const packs = onlyRemaining ? Math.max(0, pmax - cur) : pmax;   // 남은 명분
+    if (packs <= 0) return;
+
     byKey[key] = byKey[key] || {};
-    expandToRaw(m.n, need * mul, byKey[key]);
+    const tot = expandToRaw(m.n, m.q * packs);   // 필요량(남은 것 기준일 수도)
+    const one = expandToRaw(m.n, m.q);           // 1인분 기준
+    Object.entries(tot).forEach(([n, q]) => {
+      byKey[key][n] = byKey[key][n] || [0, 0];
+      byKey[key][n][0] += q;
+      byKey[key][n][1] += one[n] || 0;
+    });
   })));
+
   Object.values(byKey).forEach(o => Object.keys(o).forEach(k => distinct.add(k)));
 
   const order = mode === "assignee"
@@ -813,7 +831,7 @@ function rawTotalsBySkill(posts, onlyRemaining, mode = "skill") {
     skill: k,
     icon: iconOf(k),
     per: mode === "assignee" ? (k === SELF_ASSIGNEE ? "1인분" : `${PARTY_SIZE}명분`) : "",
-    rows: Object.entries(byKey[k]).sort((a, b) => b[1] - a[1]),
+    rows: Object.entries(byKey[k]).sort((a, b) => b[1][0] - a[1][0]),
   }));
   return { groups, distinctCount: distinct.size };
 }
@@ -892,12 +910,12 @@ function renderTrade() {
     const groups = groupByAssignee(TRADE_POSTS);
     const totalMats = groups.reduce((s, g) => s + g.items.length, 0);
     const totalDone = groups.reduce((s, g) =>
-      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length, 0);
+      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length, 0);
 
     html += `<div class="all-summary">👥 담당 ${groups.length}명 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료
       <div class="all-sub">담당 재료는 ${PARTY_SIZE}명분 · '${SELF_ASSIGNEE}'는 1인분</div></div>`;
     html += groups.map(g => {
-      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length;
+      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length;
       const allDone = doneCnt === g.items.length;
       const open = !!tradeOpen[`who|${g.who.name}`];   // 기본 닫힘
       // 담당자 안에서도 스킬끼리 붙여서 보기 좋게 정렬
@@ -909,9 +927,7 @@ function renderTrade() {
       const skillNames = [...new Set(sorted.map(({ m }) => CRAFT_RECIPES[m.n]?.skill || "직접 수급"))];
       const isSelf = g.who.name === SELF_ASSIGNEE;
       const rows = sorted
-        .map(({ post: p, ti, m }) => matRowHtml(
-          p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`,
-          isSelf ? null : m.q * PARTY_SIZE))
+        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`))
         .join("");
       return `
       <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-who="${g.who.name}">
@@ -934,11 +950,11 @@ function renderTrade() {
     const groups = groupBySkill(TRADE_POSTS);
     const totalMats = groups.reduce((s, g) => s + g.items.length, 0);
     const totalDone = groups.reduce((s, g) =>
-      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length, 0);
+      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length, 0);
 
     html += `<div class="all-summary">🚢 교역소 4곳 전체 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료</div>`;
     html += groups.map(g => {
-      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= m.q).length;
+      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length;
       const allDone = doneCnt === g.items.length;
       const open = !!tradeOpen[`all|skill|${g.skill}`];   // 기본 닫힘
       const rows = g.items
@@ -1003,8 +1019,9 @@ function renderTrade() {
               ${g.per ? `<span class="raw-per ${g.per === "1인분" ? "one" : ""}">${g.per}</span>` : ""}</span>
             <span class="raw-group-n">${g.rows.length}종</span>
           </div>
-          <div class="raw-list">${g.rows.map(([n, q]) =>
-            `<div class="raw-row"><span>${n}</span><b>${q.toLocaleString()}개</b></div>`).join("")}</div>
+          <div class="raw-list">${g.rows.map(([n, [tot, one]]) =>
+            `<div class="raw-row"><span>${n}</span><span class="raw-q"><b>${tot.toLocaleString()}개</b>${
+              tot !== one ? `<span class="raw-one">1인 ${one.toLocaleString()}개</span>` : ""}</span></div>`).join("")}</div>
         </div>`).join("")}
     ${dupNames.length
       ? `<div class="raw-note">※ ${dupNames.slice(0, 3).join(", ")}${dupNames.length > 3 ? " 등" : ""}은 여러 영역에서 쓰여 나뉘어 표시됩니다 (합치면 총량)</div>`
@@ -1045,27 +1062,21 @@ function renderTrade() {
     });
   });
 
-  // 수량 조절
-  tiersEl.querySelectorAll(".tr-ctrl").forEach(ctrl => {
-    const pid  = ctrl.dataset.post;               // 전체 통합 보기에서도 정확한 교역소로 저장
-    const tier = parseInt(ctrl.dataset.tier, 10);
-    const mat  = ctrl.dataset.mat;
-    const max  = parseInt(ctrl.dataset.max, 10);
-
-    ctrl.querySelectorAll("button").forEach(btn => {
+  // 명분 선택 (0 ~ N명분 완성)
+  tiersEl.querySelectorAll(".tr-party").forEach(box => {
+    const pid  = box.dataset.post;
+    const tier = parseInt(box.dataset.tier, 10);
+    const mat  = box.dataset.mat;
+    const max  = parseInt(box.dataset.max, 10);
+    box.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("click", e => {
         e.stopPropagation();
-        const d = btn.dataset.d;
-        const cur = matCount(pid, tier, mat);
-        setMatCount(pid, tier, mat, d === "max" ? max : cur + parseInt(d, 10), max);
+        const n = parseInt(btn.dataset.n, 10);
+        // 선택된 걸 다시 누르면 한 칸 되돌리기
+        const next = (n === matCount(pid, tier, mat)) ? n - 1 : n;
+        setMatCount(pid, tier, mat, next, max);
         renderTrade();
       });
-    });
-    const input = ctrl.querySelector("input");
-    input.addEventListener("click", e => e.stopPropagation());
-    input.addEventListener("change", () => {
-      setMatCount(pid, tier, mat, parseInt(input.value, 10) || 0, max);
-      renderTrade();
     });
   });
 }
