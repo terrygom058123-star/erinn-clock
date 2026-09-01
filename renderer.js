@@ -29,15 +29,15 @@ function lerpRGB(a, b, t) {
   return `rgb(${Math.round(a[0]+(b[0]-a[0])*t)},${Math.round(a[1]+(b[1]-a[1])*t)},${Math.round(a[2]+(b[2]-a[2])*t)})`;
 }
 const STOPS = [
-  { hour:  0, from:"#06051a", to:"#110d38", bar:"#7c3aed", icon:"🌌", label:"새벽" },
-  { hour:  4, from:"#0e0626", to:"#1c1050", bar:"#6d28d9", icon:"🌌", label:"새벽" },
-  { hour:  6, from:"#7c2d0a", to:"#c2410c", bar:"#fb923c", icon:"🌅", label:"아침" },
-  { hour:  9, from:"#854d0e", to:"#ca8a04", bar:"#fde68a", icon:"🌄", label:"아침" },
-  { hour: 12, from:"#1e3a8a", to:"#0369a1", bar:"#fde047", icon:"☀️", label:"낮"  },
-  { hour: 16, from:"#1e40af", to:"#0284c7", bar:"#fbbf24", icon:"☀️", label:"낮"  },
-  { hour: 18, from:"#7c2d12", to:"#881337", bar:"#f97316", icon:"🌇", label:"저녁" },
-  { hour: 20, from:"#0f172a", to:"#1e1b4b", bar:"#818cf8", icon:"🌙", label:"밤"  },
-  { hour: 24, from:"#06051a", to:"#110d38", bar:"#7c3aed", icon:"🌌", label:"새벽" } ];
+  { hour:  0, from:"#2b2a6b", to:"#4b3f9e", bar:"#a78bfa", icon:"🌌", label:"새벽" },
+  { hour:  4, from:"#3a3590", to:"#6250cc", bar:"#c4b5fd", icon:"🌌", label:"새벽" },
+  { hour:  6, from:"#d94f2b", to:"#f5843c", bar:"#ffd166", icon:"🌅", label:"아침" },
+  { hour:  9, from:"#d98324", to:"#f0a92e", bar:"#fff1a8", icon:"🌄", label:"아침" },
+  { hour: 12, from:"#1e5fd0", to:"#2f95dd", bar:"#ffe066", icon:"☀️", label:"낮"  },
+  { hour: 16, from:"#2563eb", to:"#3aa6e4", bar:"#ffd54a", icon:"☀️", label:"낮"  },
+  { hour: 18, from:"#e0562a", to:"#c02a63", bar:"#ffb057", icon:"🌇", label:"저녁" },
+  { hour: 20, from:"#232f63", to:"#3a3579", bar:"#a5b4fc", icon:"🌙", label:"밤"  },
+  { hour: 24, from:"#2b2a6b", to:"#4b3f9e", bar:"#a78bfa", icon:"🌌", label:"새벽" } ];
 function getTheme(h, m) {
   const frac = h + m / 60;
   let i = STOPS.length - 2;
@@ -94,7 +94,7 @@ function renderTasks() {
         <div>
           <div class="task-name">${task.name.replace("\n", "<br>")}</div>
           <div class="task-sub">현실 ${task.duration/60}분 · 에린 ${task.duration/90}시간</div>
-          ${running ? `<div style="margin-top:6px;width:120px;height:4px;background:#0f172a;border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#22c55e;border-radius:3px;transition:width 1s linear"></div></div>` : ""}
+          ${running ? `<div style="margin-top:6px;width:120px;height:4px;background:var(--line);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:#22c55e;border-radius:3px;transition:width 1s linear"></div></div>` : ""}
         </div>
       </div>
       <div class="task-right">
@@ -860,22 +860,22 @@ function routeMapSvg(route) {
   let lines = "";
   for (let i = 0; i < pts.length - 1; i++) {
     lines += `<line x1="${pts[i].x}" y1="${pts[i].y}" x2="${pts[i + 1].x}" y2="${pts[i + 1].y}"
-      stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 3.5" opacity="0.95"/>`;
+      stroke="#e07b00" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 3.5" opacity="0.95"/>`;
   }
 
-  const colorOf = t => t === "barter" ? "#facc15" : t === "port" ? "#c4b5fd" : t === "city" ? "#fca5a5" : "#94a3b8";
+  const colorOf = t => t === "barter" ? "#f5b301" : t === "port" ? "#8b7cf0" : t === "city" ? "#e5484d" : "#8a93a6";
   const nodes = Object.entries(ROUTE_MAP_NODES).map(([name, n]) => {
     const idx = path.indexOf(name);
     const active = idx >= 0;
     const r = active ? 6 : 3.2;
-    const fill = active ? colorOf(n.type) : "#475569";
-    const stroke = active ? "#fff" : "#334155";
+    const fill = active ? colorOf(n.type) : "#b6a892";
+    const stroke = active ? "#fff" : "#e9e0d2";
     const num = active
-      ? `<text x="${n.x}" y="${n.y + 2.6}" font-size="7.5" font-weight="800" text-anchor="middle" fill="#0f172a">${idx + 1}</text>`
+      ? `<text x="${n.x}" y="${n.y + 2.6}" font-size="7.5" font-weight="800" text-anchor="middle" fill="#fff">${idx + 1}</text>`
       : "";
     const label = `<text x="${n.x}" y="${n.y - (active ? 9.5 : 6.5)}" font-size="7.5" text-anchor="middle"
-        fill="${active ? "#f8fafc" : "#94a3b8"}" font-weight="${active ? 700 : 400}"
-        stroke="#0a1628" stroke-width="2.2" paint-order="stroke">${name}</text>`;
+        fill="${active ? "#1a2233" : "#8a7f6d"}" font-weight="${active ? 800 : 500}"
+        stroke="#ffffff" stroke-width="2.4" paint-order="stroke">${name}</text>`;
     return `<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>${num}${label}`;
   }).join("");
 
@@ -890,29 +890,29 @@ function routeMapSvg(route) {
   <svg class="route-map" viewBox="0 0 340 250" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#0a1a2f"/><stop offset="100%" stop-color="#081426"/>
+        <stop offset="0%" stop-color="#e3f0fa"/><stop offset="100%" stop-color="#d3e6f6"/>
       </linearGradient>
     </defs>
     <rect x="0" y="0" width="340" height="250" fill="url(#sea)" rx="12"/>
 
     <!-- 이리아 대륙 -->
-    <path d="${IRIA}" fill="#243247" stroke="#3b5170" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="${IRIA}" fill="#f3ece0" stroke="#cbb99c" stroke-width="1.2" stroke-linejoin="round"/>
     <!-- 레네스 섬 -->
-    <ellipse cx="176" cy="11" rx="9" ry="5" fill="#243247" stroke="#3b5170" stroke-width="1"/>
-    <text x="176" y="13.5" font-size="5" fill="#64748b" text-anchor="middle">레네스</text>
+    <ellipse cx="176" cy="11" rx="9" ry="5" fill="#f3ece0" stroke="#cbb99c" stroke-width="1"/>
+    <text x="176" y="13.5" font-size="5" fill="#96887a" text-anchor="middle">레네스</text>
 
     <!-- 지역 이름 (옅게) -->
-    <text x="118" y="34" font-size="6" fill="#4b6180" text-anchor="middle">페라 화산</text>
-    <text x="72"  y="100" font-size="6" fill="#4b6180" text-anchor="middle">셀라 해변</text>
-    <text x="150" y="126" font-size="6" fill="#4b6180" text-anchor="middle">라베로 고산지</text>
-    <text x="272" y="152" font-size="6" fill="#4b6180" text-anchor="middle">온가 사막</text>
-    <text x="130" y="172" font-size="6" fill="#4b6180" text-anchor="middle">무유 사막</text>
-    <text x="232" y="185" font-size="6" fill="#4b6180" text-anchor="middle">나레스 고원</text>
+    <text x="118" y="34" font-size="6" fill="#a89679" text-anchor="middle">페라 화산</text>
+    <text x="72"  y="100" font-size="6" fill="#a89679" text-anchor="middle">셀라 해변</text>
+    <text x="150" y="126" font-size="6" fill="#a89679" text-anchor="middle">라베로 고산지</text>
+    <text x="272" y="152" font-size="6" fill="#a89679" text-anchor="middle">온가 사막</text>
+    <text x="130" y="172" font-size="6" fill="#a89679" text-anchor="middle">무유 사막</text>
+    <text x="232" y="185" font-size="6" fill="#a89679" text-anchor="middle">나레스 고원</text>
 
     <!-- 본토(울라) -->
-    <rect x="10" y="212" width="320" height="32" rx="9" fill="#243247" stroke="#3b5170" stroke-width="1.2"/>
-    <text x="330" y="208" font-size="7" fill="#4b6180" text-anchor="end">이리아 대륙</text>
-    <text x="20"  y="240" font-size="7" fill="#4b6180">본토(울라) · 배로 이동</text>
+    <rect x="10" y="212" width="320" height="32" rx="9" fill="#f3ece0" stroke="#cbb99c" stroke-width="1.2"/>
+    <text x="330" y="208" font-size="7" fill="#a89679" text-anchor="end">이리아 대륙</text>
+    <text x="20"  y="240" font-size="7" fill="#a89679">본토(울라) · 배로 이동</text>
 
     ${lines}${nodes}
   </svg>`;
@@ -1941,7 +1941,7 @@ if (alertDismissBtn) alertDismissBtn.addEventListener("click", e => { e.stopProp
 // ─── 알람 목록 렌더링 ─────────────────────────────────────
 function renderAlarms() {
   if (alarms.length === 0) {
-    alarmList.innerHTML = `<div class="alarm-empty">알람이 없어요.<br><span style="color:#475569">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>`;
+    alarmList.innerHTML = `<div class="alarm-empty">알람이 없어요.<br><span style="color:var(--text-3)">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>`;
     return;
   }
   alarmList.innerHTML = alarms.map(a => {
@@ -2154,8 +2154,8 @@ function renderMarket(state) {
       <div class="market-right">
         ${priceBlock}
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-left:6px">
-          <span style="font-size:16px;color:#475569">›</span>
-          <button class="btn-market-del" data-idx="${i}" style="background:none;border:none;color:#334155;font-size:14px;cursor:pointer;line-height:1;padding:2px">✕</button>
+          <span style="font-size:16px;color:var(--text-3)">›</span>
+          <button class="btn-market-del" data-idx="${i}" style="background:none;border:none;color:var(--text-3);font-size:14px;cursor:pointer;line-height:1;padding:2px">✕</button>
         </div>
       </div>
     </div>`;
@@ -2181,8 +2181,8 @@ function renderMarket(state) {
   } else if (state === "cached") {
     const anyData = MARKET_ITEMS.some(it => marketCache[it.name]);
     updatedEl.innerHTML = anyData
-      ? `<span style="color:#64748b">저장된 시세 · 🔄 눌러 최신 가격 확인</span>`
-      : `<span style="color:#64748b">🔄 새로고침을 눌러 시세를 불러오세요</span>`;
+      ? `<span style="color:var(--text-3)">저장된 시세 · 🔄 눌러 최신 가격 확인</span>`
+      : `<span style="color:var(--text-3)">🔄 새로고침을 눌러 시세를 불러오세요</span>`;
   } else {
     updatedEl.textContent = `${new Date().toLocaleTimeString("ko-KR")} 기준`;
   }
@@ -2200,7 +2200,7 @@ async function openMarketDetail(idx) {
 
   const listEl = document.getElementById("mdetail-list");
   if (!top10.length) {
-    listEl.innerHTML = `<div style="text-align:center;color:#475569;padding:24px">매물이 없습니다</div>`;
+    listEl.innerHTML = `<div style="text-align:center;color:var(--text-3);padding:24px">매물이 없습니다</div>`;
   } else {
     const minPrice = top10[0].auction_price_per_unit;
     listEl.innerHTML = top10.map((entry, i) => {
@@ -2262,7 +2262,7 @@ async function doMarketSearch() {
   const keyword = document.getElementById("market-search-input").value.trim();
   if (!keyword) return;
   const resultEl = document.getElementById("msearch-results");
-  resultEl.innerHTML = `<div style="text-align:center;color:#475569;padding:20px">⏳ 검색 중...</div>`;
+  resultEl.innerHTML = `<div style="text-align:center;color:var(--text-3);padding:20px">⏳ 검색 중...</div>`;
 
   const enc = encodeURIComponent(keyword);
   const headers = { "x-nxopen-api-key": API_KEY };
@@ -2284,7 +2284,7 @@ async function doMarketSearch() {
     const unique = Object.values(map).sort((a, b) => Math.min(...a.prices) - Math.min(...b.prices));
 
     if (!unique.length) {
-      resultEl.innerHTML = `<div style="text-align:center;color:#475569;padding:20px">검색 결과 없음</div>`;
+      resultEl.innerHTML = `<div style="text-align:center;color:var(--text-3);padding:20px">검색 결과 없음</div>`;
       return;
     }
 
@@ -2294,11 +2294,11 @@ async function doMarketSearch() {
       return `
       <div class="msearch-row">
         <div>
-          <div style="font-size:14px;font-weight:600;color:#e2e8f0">${it.name}</div>
-          <div style="font-size:12px;color:#64748b;margin-top:2px">최저 ${low.toLocaleString()}골드 · 매물 ${it.count}개</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${it.name}</div>
+          <div style="font-size:12px;color:var(--text-3);margin-top:2px">최저 ${low.toLocaleString()}골드 · 매물 ${it.count}개</div>
         </div>
         ${already
-          ? `<span style="font-size:12px;color:#475569">추가됨</span>`
+          ? `<span style="font-size:12px;color:var(--text-3)">추가됨</span>`
           : `<button class="btn-msearch-add" data-name="${it.name}" style="background:#4f46e5;color:white;border:none;padding:6px 14px;border-radius:10px;font-size:13px;cursor:pointer">+ 추가</button>`
         }
       </div>`;

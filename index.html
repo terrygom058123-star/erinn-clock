@@ -89,14 +89,14 @@
       <button class="btn-add" id="btn-add">+ 추가</button>
     </div>
     <div id="alarm-list">
-      <div class="alarm-empty">알람이 없어요.<br><span style="color:#475569">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>
+      <div class="alarm-empty">알람이 없어요.<br><span style="color:var(--text-3)">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>
     </div>
 
     <!-- 매일 할일 -->
     <div class="alarm-header" style="margin-top:8px">
-      <h2>☀️ 매일 할일 <span id="hw-daily-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
+      <h2>☀️ 매일 할일 <span id="hw-daily-count" style="font-size:13px;color:var(--text-3);font-weight:400"></span></h2>
       <div class="hw-head-right">
-        <span id="hw-daily-reset" style="font-size:11px;color:#475569"></span>
+        <span id="hw-daily-reset" style="font-size:11px;color:var(--text-3)"></span>
         <button class="btn-add" id="btn-hw-add-daily" style="font-size:12px;padding:6px 12px">+ 추가</button>
       </div>
     </div>
@@ -104,9 +104,9 @@
 
     <!-- 주간 할일 -->
     <div class="alarm-header" style="margin-top:8px">
-      <h2>📅 주간 할일 <span id="hw-weekly-count" style="font-size:13px;color:#475569;font-weight:400"></span></h2>
+      <h2>📅 주간 할일 <span id="hw-weekly-count" style="font-size:13px;color:var(--text-3);font-weight:400"></span></h2>
       <div class="hw-head-right">
-        <span id="hw-weekly-reset" style="font-size:11px;color:#475569"></span>
+        <span id="hw-weekly-reset" style="font-size:11px;color:var(--text-3)"></span>
         <button class="btn-add" id="btn-hw-add-weekly" style="font-size:12px;padding:6px 12px">+ 추가</button>
       </div>
     </div>
@@ -128,18 +128,18 @@
       <h2>💰 경매장 시세</h2>
       <div style="display:flex;gap:6px">
         <button class="btn-add" id="btn-market-search" style="font-size:12px;padding:6px 12px">+ 추가</button>
-        <button class="btn-add" id="btn-refresh-market" style="font-size:12px;padding:6px 12px;background:#334155">🔄</button>
+        <button class="btn-add" id="btn-refresh-market" style="font-size:12px;padding:6px 12px;background:var(--card-soft);color:var(--text-2);border:1px solid var(--line)">🔄</button>
       </div>
     </div>
     <div id="market-list"></div>
-    <div id="market-updated" style="text-align:center;font-size:11px;color:#334155;margin-top:4px;margin-bottom:8px"></div>
+    <div id="market-updated" style="text-align:center;font-size:11px;color:var(--text-3);margin-top:4px;margin-bottom:8px"></div>
   </div>
 
   <!-- ═══ 탭: 교역 ═══ -->
   <div class="tab-panel" id="tab-trade" style="display:none">
     <div class="alarm-header">
       <h2>🚢 교역 준비물</h2>
-      <button class="btn-add" id="btn-trade-reset" style="font-size:12px;padding:6px 12px;background:#334155">초기화</button>
+      <button class="btn-add" id="btn-trade-reset" style="font-size:12px;padding:6px 12px;background:var(--card-soft);color:var(--text-2);border:1px solid var(--line)">초기화</button>
     </div>
     <div class="trade-posts" id="trade-posts"></div>
     <div id="trade-tiers"></div>
@@ -187,7 +187,7 @@
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h3 id="hw-modal-title">할일 추가</h3>
-      <button id="hw-modal-close" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1">✕</button>
+      <button id="hw-modal-close" style="background:none;border:none;color:var(--text-3);font-size:22px;cursor:pointer;line-height:1">✕</button>
     </div>
     <div class="form-group">
       <label>할일 이름</label>
@@ -200,7 +200,7 @@
     </div>
     <button class="btn-confirm" id="btn-hw-save">저장</button>
     <button class="btn-confirm" id="btn-hw-delete"
-            style="background:#7f1d1d;margin-top:8px;display:none">삭제</button>
+            style="background:var(--red);margin-top:8px;display:none">삭제</button>
   </div>
 </div>
 
@@ -210,10 +210,10 @@
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h3>경매장 검색</h3>
-      <button id="msearch-close" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1">✕</button>
+      <button id="msearch-close" style="background:none;border:none;color:var(--text-3);font-size:22px;cursor:pointer;line-height:1">✕</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px">
-      <input type="text" id="market-search-input" placeholder="아이템 이름 입력" style="flex:1;background:#334155;color:white;border:none;border-radius:12px;padding:12px 14px;font-size:14px;outline:none"/>
+      <input type="text" id="market-search-input" placeholder="아이템 이름 입력" style="flex:1;background:var(--card-soft);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;outline:none"/>
       <button id="btn-msearch-go" class="btn-confirm" style="width:auto;margin:0;padding:12px 18px;border-radius:12px">검색</button>
     </div>
     <div id="msearch-results" style="max-height:320px;overflow-y:auto"></div>
@@ -226,9 +226,9 @@
     <div class="modal-handle"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
       <h3 id="mdetail-title" style="font-size:16px"></h3>
-      <button id="mdetail-close" style="background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1">✕</button>
+      <button id="mdetail-close" style="background:none;border:none;color:var(--text-3);font-size:22px;cursor:pointer;line-height:1">✕</button>
     </div>
-    <div id="mdetail-count" style="font-size:12px;color:#64748b;margin-bottom:14px"></div>
+    <div id="mdetail-count" style="font-size:12px;color:var(--text-3);margin-bottom:14px"></div>
     <div id="mdetail-list"></div>
   </div>
 </div>
