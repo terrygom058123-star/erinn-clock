@@ -37,8 +37,7 @@ const STOPS = [
   { hour: 16, from:"#1e40af", to:"#0284c7", bar:"#fbbf24", icon:"☀️", label:"낮"  },
   { hour: 18, from:"#7c2d12", to:"#881337", bar:"#f97316", icon:"🌇", label:"저녁" },
   { hour: 20, from:"#0f172a", to:"#1e1b4b", bar:"#818cf8", icon:"🌙", label:"밤"  },
-  { hour: 24, from:"#06051a", to:"#110d38", bar:"#7c3aed", icon:"🌌", label:"새벽" },
-];
+  { hour: 24, from:"#06051a", to:"#110d38", bar:"#7c3aed", icon:"🌌", label:"새벽" } ];
 function getTheme(h, m) {
   const frac = h + m / 60;
   let i = STOPS.length - 2;
@@ -137,14 +136,12 @@ const DEFAULT_HW = {
     { id: "d2", name: "베테랑/빛구/로드(크리스탈)" },
     { id: "d3", name: "탐험대 보내기" },
     { id: "d4", name: "리플레이" },
-    { id: "d5", name: "탈농" },
-  ],
+    { id: "d5", name: "탈농" } ],
   weekly: [
     { id: "w1", name: "네아르", target: 10 },
     { id: "w2", name: "크롬",   target: 10 },
     { id: "w3", name: "글매",   target: 3  },
-    { id: "w4", name: "브리",   target: 7  },
-  ],
+    { id: "w4", name: "브리",   target: 7  } ],
 };
 let hwList = JSON.parse(localStorage.getItem("erinn-hw-list") || "null")
           || JSON.parse(JSON.stringify(DEFAULT_HW));
@@ -429,44 +426,31 @@ const TRADE_POSTS = [
   {
     id: "jardin", name: "페라 (자르딘)", icon: "🌋",
     tiers: [
-      { t: 1, name: "화산 머드팩",       qty: 25, mats: [{ n: "동판", q: 50 }, { n: "신비한 허브 가루", q: 75 }] },
-      { t: 2, name: "마그마 스톤",       qty: 15, mats: [{ n: "미스릴판", q: 30 }, { n: "보릿가루", q: 45 }] },
       { t: 3, name: "익시온의 뿔",      qty: 10, mats: [{ n: "마리오네트 500 포션", q: 30 }, { n: "금판", q: 50 }] },
       { t: 4, name: "화산 도마뱀의 알",   qty: 8,  mats: [{ n: "빤짝이 종이", q: 40 }, { n: "최고급 옷감", q: 40 }, { n: "생명력 500 포션", q: 16 }] },
-      { t: 5, name: "라스파 흑표범의 가죽", qty: 3,  mats: [{ n: "뮤턴트", q: 3 }, { n: "조화의 코스모스 퍼퓸", q: 6 }, { n: "특급 나무장작", q: 9 }] },
-    ],
+      { t: 5, name: "라스파 흑표범의 가죽", qty: 3,  mats: [{ n: "뮤턴트", q: 3 }, { n: "조화의 코스모스 퍼퓸", q: 6 }, { n: "특급 나무장작", q: 9 }] } ],
   },
   {
     id: "karu", name: "카루 숲", icon: "🌲",
     tiers: [
-      { t: 1, name: "우드 테이블",        qty: 25, mats: [{ n: "새우 조련 미끼", q: 100 }, { n: "실리엔", q: 50 }] },
-      { t: 2, name: "목공예품",          qty: 15, mats: [{ n: "마법의 양피지", q: 15 }, { n: "질긴 끈", q: 30 }] },
       { t: 3, name: "스톤 홀스 조각상",   qty: 10, mats: [{ n: "힐웬 합금", q: 20 }, { n: "밀가루", q: 50 }] },
       { t: 4, name: "카루 표고 버섯",      qty: 8,  mats: [{ n: "스핀 기어", q: 8 }, { n: "중급 나무장작", q: 40 }, { n: "고급 실크", q: 32 }] },
-      { t: 5, name: "조개 껍질 화석",      qty: 3,  mats: [{ n: "에너지 증폭 장치", q: 6 }, { n: "튼튼한 고리", q: 3 }, { n: "마법의 깃털펜", q: 15 }] },
-    ],
+      { t: 5, name: "조개 껍질 화석",      qty: 3,  mats: [{ n: "에너지 증폭 장치", q: 6 }, { n: "튼튼한 고리", q: 3 }, { n: "마법의 깃털펜", q: 15 }] } ],
   },
   {
     id: "oasis", name: "오아시스", icon: "🏜️",
     tiers: [
-      { t: 1, name: "고운 모래",          qty: 25, mats: [{ n: "스태미나 500 포션", q: 75 }, { n: "매듭끈", q: 50 }] },
-      { t: 2, name: "프리즌 고스트의 날개",  qty: 15, mats: [{ n: "쿠션용 솜", q: 15 }, { n: "최고급 실크", q: 30 }] },
       { t: 3, name: "오아시스 그림",      qty: 10, mats: [{ n: "최고급 가죽끈", q: 10 }, { n: "질긴 실", q: 30 }] },
       { t: 4, name: "선인장 꽃",         qty: 8,  mats: [{ n: "정령의 리큐르", q: 8 }, { n: "은판", q: 16 }, { n: "고급 옷감", q: 32 }] },
-      { t: 5, name: "거대 송곳니 화석",   qty: 3,  mats: [{ n: "펫 놀이세트", q: 3 }, { n: "건초 더미", q: 9 }, { n: "마력이 깃든 나무장작", q: 15 }] },
-    ],
+      { t: 5, name: "거대 송곳니 화석",   qty: 3,  mats: [{ n: "펫 놀이세트", q: 3 }, { n: "건초 더미", q: 9 }, { n: "마력이 깃든 나무장작", q: 15 }] } ],
   },
   {
     id: "calida", name: "칼리다", icon: "♨️",
     tiers: [
-      { t: 1, name: "맥반석 계란",   qty: 25, mats: [{ n: "마나 500 포션", q: 25 }, { n: "고급 나무장작", q: 50 }] },
-      { t: 2, name: "칼리다 연어",   qty: 15, mats: [{ n: "에너지 컨버터", q: 15 }, { n: "정화된 토끼의 발", q: 15 }] },
       { t: 3, name: "온천 입욕제",    qty: 10, mats: [{ n: "끈끈이 풀", q: 30 }, { n: "최고급 바닐라 향초", q: 20 }] },
       { t: 4, name: "대형 캠핑 텐트",  qty: 8,  mats: [{ n: "인조 잔디", q: 8 }, { n: "에메랄드 퓨즈", q: 8 }, { n: "고급 가죽끈", q: 40 }] },
-      { t: 5, name: "핑크 솔트",     qty: 3,  mats: [{ n: "미스릴 대못", q: 9 }, { n: "발리스타용 독 묻은 와이번 볼트", q: 9 }, { n: "최고급 나무장작", q: 9 }] },
-    ],
-  },
-];
+      { t: 5, name: "핑크 솔트",     qty: 3,  mats: [{ n: "미스릴 대못", q: 9 }, { n: "발리스타용 독 묻은 와이번 볼트", q: 9 }, { n: "최고급 나무장작", q: 9 }] } ],
+  } ];
 
 // 저장 단위: 몇 '명분'을 완성했는지 (0 ~ 담당 인원수)
 let tradeState = JSON.parse(localStorage.getItem("erinn-trade-party") || "{}");
@@ -732,8 +716,7 @@ const TRADE_ASSIGNEES = [
   { name: "참선",     icon: "🧵", skills: ["제분", "방직"] },
   { name: "각자",     icon: "👥",
     skills: ["합성", "핀즈 크래프트", "필기구 크래프트", "핸디크래프트", "포션 조제"],
-    items: ["최고급 가죽끈", "고급 가죽끈"] },
-];
+    items: ["최고급 가죽끈", "고급 가죽끈"] } ];
 const UNASSIGNED = { name: "미지정", icon: "❓", skills: [] };
 const PARTY_SIZE = 4;                 // 4명이 함께 교역
 const SELF_ASSIGNEE = "각자";          // '각자'는 본인 것만 준비하므로 4명분 계산 제외
@@ -786,11 +769,10 @@ const TRADE_ROUTES = [
     load: [
       { post: "페라 교역소", icon: "🌋", items: [
         { n: "라스파 흑표범의 가죽", q: 3 }, { n: "화산 도마뱀의 알", q: 7 },
-        { n: "익시온의 뿔", q: 10 }, { n: "마그마 스톤", q: 11 } ] },
+        { n: "익시온의 뿔", q: 10 } ] },
       { post: "칼리다 교역소", icon: "♨️", items: [
         { n: "핑크 솔트", q: 3 }, { n: "대형 캠핑 텐트", q: 7 },
-        { n: "온천 입욕제", q: 10 }, { n: "칼리다 연어", q: 7 } ] },
-    ],
+        { n: "온천 입욕제", q: 10 } ] } ],
   },
   {
     id: "r2", name: "2차", cert: "임프 보증서",
@@ -798,10 +780,9 @@ const TRADE_ROUTES = [
     pathLabel: "페라(자르딘 해변) → 칼리다 → 코르",
     load: [
       { post: "페라 교역소", icon: "🌋", items: [
-        { n: "화산 도마뱀의 알", q: 1 }, { n: "마그마 스톤", q: 4 }, { n: "화산 머드팩", q: 25 } ] },
+        { n: "화산 도마뱀의 알", q: 1 } ] },
       { post: "칼리다 교역소", icon: "♨️", items: [
-        { n: "대형 캠핑 텐트", q: 1 }, { n: "칼리다 연어", q: 8 }, { n: "맥반석 계란", q: 25 } ] },
-    ],
+        { n: "대형 캠핑 텐트", q: 1 } ] } ],
   },
   {
     id: "r3", name: "3차", cert: "임프의 고급 보증서",
@@ -810,11 +791,10 @@ const TRADE_ROUTES = [
     load: [
       { post: "오아시스 교역소", icon: "🏜️", items: [
         { n: "거대 송곳니 화석", q: 3 }, { n: "선인장 꽃", q: 7 },
-        { n: "오아시스 그림", q: 10 }, { n: "프리즌 고스트의 날개", q: 11 } ] },
+        { n: "오아시스 그림", q: 10 } ] },
       { post: "카루숲 교역소", icon: "🌲", items: [
         { n: "조개 껍질 화석", q: 3 }, { n: "카루 표고 버섯", q: 7 },
-        { n: "스톤 홀스 조각상", q: 10 }, { n: "목공예품", q: 7 } ] },
-    ],
+        { n: "스톤 홀스 조각상", q: 10 } ] } ],
   },
   {
     id: "r4", name: "4차", cert: "임프 보증서",
@@ -822,12 +802,10 @@ const TRADE_ROUTES = [
     pathLabel: "카루숲(카루숲 남쪽) → 오아시스 → 코르",
     load: [
       { post: "카루숲 교역소", icon: "🌲", items: [
-        { n: "카루 표고 버섯", q: 1 }, { n: "목공예품", q: 8 }, { n: "우드 테이블", q: 25 } ] },
+        { n: "카루 표고 버섯", q: 1 } ] },
       { post: "오아시스 교역소", icon: "🏜️", items: [
-        { n: "선인장 꽃", q: 1 }, { n: "프리즌 고스트의 날개", q: 4 }, { n: "고운 모래", q: 25 } ] },
-    ],
-  },
-];
+        { n: "선인장 꽃", q: 1 } ] } ],
+  } ];
 
 let routeState = JSON.parse(localStorage.getItem("erinn-route") || "{}");
 let routeCur   = localStorage.getItem("erinn-route-cur") || "r1";
@@ -1206,7 +1184,7 @@ function renderTrade() {
   // 여러 영역에 걸쳐 쓰이는 원재료 찾기 (안내용)
   const seenIn = {};
   rawGroups.forEach(g => g.rows.forEach(([n]) => { seenIn[n] = (seenIn[n] || 0) + 1; }));
-  const dupNames = Object.entries(seenIn).filter(([, c]) => c > 1).map(([n]) => n);
+  const dupNames = Object.entries(seenIn).filter(([ c]) => c > 1).map(([n]) => n);
   const sumHtml = `
   <div class="raw-total ${rawOpen ? "open" : ""}">
     <div class="raw-head" id="raw-head">
@@ -1592,8 +1570,7 @@ const DEFAULT_ALARMS = [
   {h:5,  m:40}, {h:7,  m:0},  {h:8,  m:20}, {h:9,  m:40},
   {h:11, m:0},  {h:12, m:20}, {h:13, m:40}, {h:15, m:0},
   {h:16, m:20}, {h:17, m:40}, {h:19, m:0},  {h:20, m:20},
-  {h:21, m:40}, {h:23, m:0},
-].map((t, i) => ({
+  {h:21, m:40}, {h:23, m:0} ].map((t, i) => ({
   id: "default_" + i,
   label: "굵은 실",
   h: t.h, m: t.m,
@@ -2021,8 +1998,7 @@ const DEFAULT_MARKET_ITEMS = [
   { name: "최고급 수제 붕대",  icon: "🩹" },
   { name: "질겅질겅 낙지츄",  icon: "🐙", showOptions: ["방어","보호","마법 방어","마법 보호"] },
   { name: "고급 옷감",        icon: "🪡" },
-  { name: "향기로운 꿀 우유", icon: "🍯" },
-];
+  { name: "향기로운 꿀 우유", icon: "🍯" } ];
 
 let MARKET_ITEMS = JSON.parse(localStorage.getItem("erinn-market-items") || "null") || DEFAULT_MARKET_ITEMS;
 function saveMarketItems() { localStorage.setItem("erinn-market-items", JSON.stringify(MARKET_ITEMS)); }
