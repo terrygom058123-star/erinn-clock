@@ -435,6 +435,15 @@ body {
 .tr-buy b { color: #86efac; margin-left: 4px; }
 .tr-buy.none { color: #64748b; background: #0f172a; }
 
+/* 담당 배정 선택 */
+.tr-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.tr-assign {
+  background: #312e81; color: #c7d2fe; border: 1px solid #4f46e5;
+  border-radius: 6px; padding: 2px 6px; font-size: 10.5px; font-weight: 700;
+  outline: none; cursor: pointer; max-width: 130px;
+}
+.tr-assign.none { background: #3b1218; color: #fca5a5; border-color: #7f1d1d; }
+
 /* 재료 순서 이동 버튼 */
 .tr-move { display: inline-flex; gap: 2px; margin-right: 6px; vertical-align: middle; }
 .tr-move button {

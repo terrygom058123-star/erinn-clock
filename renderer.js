@@ -417,6 +417,17 @@ const CRAFT_RECIPES = {
   // ── 합성 ──
   "빤짝이 종이": { skill: "합성", mats: [{ n: "작은 녹색구슬", q: 1 }, { n: "작은 은색구슬", q: 1 }, { n: "작은 빨간구슬", q: 1 }, { n: "작은 파란구슬", q: 1 }, { n: "종이", q: 10 }] },
 
+  // ── 6티어 (탈틴농장 / 핸디크래프트 / 제련) ──
+  "탈틴 농장 블랙베리 주스":     { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 재스민", q: 1 }, { n: "탈틴 농장 고급 블랙베리", q: 1 }] },
+  "탈틴 농장 방수 원단":         { skill: "탈틴농장", mats: [{ n: "탈틴 농장 고급 마법 거미줄", q: 1 }, { n: "탈틴 농장 고급 고무", q: 1 }] },
+  "탈틴 농장 퓨어 블러썸 머리핀": { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 재스민", q: 1 }, { n: "탈틴 농장 고급 석영", q: 1 }] },
+  "탈틴 농장 재스민 향수":       { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 재스민", q: 2 }, { n: "탈틴 농장 일반 오크라", q: 1 }, { n: "탈틴 농장 고급 블랙베리", q: 1 }] },
+  "탈틴 농장 장식용 크리스탈 검": { skill: "탈틴농장", mats: [{ n: "탈틴 농장 고급 석영", q: 2 }, { n: "탈틴 농장 일반 오크라", q: 1 }, { n: "탈틴 농장 고급 고무", q: 1 }] },
+  "월광 여울 이삭빵 박스":       { skill: "핸디크래프트", mats: [{ n: "월광 당근", q: 30 }, { n: "여울 이삭", q: 20 }, { n: "종이", q: 20 }] },
+  "희귀 버섯 볶음 박스":         { skill: "핸디크래프트", mats: [{ n: "악마의 손가락", q: 25 }, { n: "노랑망태버섯", q: 25 }, { n: "종이", q: 20 }] },
+  "적철판": { skill: "제련", mats: [{ n: "적철괴", q: 10 }] },
+  "백연판": { skill: "제련", mats: [{ n: "백연괴", q: 10 }] },
+
   // ── 요리 (재료 비율로 제작) ──
   "새우 조련 미끼": { skill: "요리", ratio: true, mats: [{ n: "설탕", q: 38 }, { n: "마늘", q: 32 }, { n: "새우", q: 30 }] },
 };
@@ -428,28 +439,36 @@ const TRADE_POSTS = [
     tiers: [
       { t: 3, name: "익시온의 뿔",      qty: 10, mats: [{ n: "마리오네트 500 포션", q: 30 }, { n: "금판", q: 50 }] },
       { t: 4, name: "화산 도마뱀의 알",   qty: 8,  mats: [{ n: "빤짝이 종이", q: 40 }, { n: "최고급 옷감", q: 40 }, { n: "생명력 500 포션", q: 16 }] },
-      { t: 5, name: "라스파 흑표범의 가죽", qty: 3,  mats: [{ n: "뮤턴트", q: 3 }, { n: "조화의 코스모스 퍼퓸", q: 6 }, { n: "특급 나무장작", q: 9 }] } ],
+      { t: 5, name: "라스파 흑표범의 가죽", qty: 3,  mats: [{ n: "뮤턴트", q: 3 }, { n: "조화의 코스모스 퍼퓸", q: 6 }, { n: "특급 나무장작", q: 9 }] },
+      { t: 6, name: "드래곤 부채",       qty: 2,  mats: [{ n: "희귀 버섯 볶음 박스", q: 2 }, { n: "백연판", q: 2 }] },
+    ],
   },
   {
     id: "karu", name: "카루 숲", icon: "🌲",
     tiers: [
       { t: 3, name: "스톤 홀스 조각상",   qty: 10, mats: [{ n: "힐웬 합금", q: 20 }, { n: "밀가루", q: 50 }] },
       { t: 4, name: "카루 표고 버섯",      qty: 8,  mats: [{ n: "스핀 기어", q: 8 }, { n: "중급 나무장작", q: 40 }, { n: "고급 실크", q: 32 }] },
-      { t: 5, name: "조개 껍질 화석",      qty: 3,  mats: [{ n: "에너지 증폭 장치", q: 6 }, { n: "튼튼한 고리", q: 3 }, { n: "마법의 깃털펜", q: 15 }] } ],
+      { t: 5, name: "조개 껍질 화석",      qty: 3,  mats: [{ n: "에너지 증폭 장치", q: 6 }, { n: "튼튼한 고리", q: 3 }, { n: "마법의 깃털펜", q: 15 }] },
+      { t: 6, name: "카루숲 수액 향초",   qty: 3,  mats: [{ n: "탈틴 농장 블랙베리 주스", q: 3 }, { n: "탈틴 농장 방수 원단", q: 3 }, { n: "탈틴 농장 퓨어 블러썸 머리핀", q: 3 }] },
+    ],
   },
   {
     id: "oasis", name: "오아시스", icon: "🏜️",
     tiers: [
       { t: 3, name: "오아시스 그림",      qty: 10, mats: [{ n: "최고급 가죽끈", q: 10 }, { n: "질긴 실", q: 30 }] },
       { t: 4, name: "선인장 꽃",         qty: 8,  mats: [{ n: "정령의 리큐르", q: 8 }, { n: "은판", q: 16 }, { n: "고급 옷감", q: 32 }] },
-      { t: 5, name: "거대 송곳니 화석",   qty: 3,  mats: [{ n: "펫 놀이세트", q: 3 }, { n: "건초 더미", q: 9 }, { n: "마력이 깃든 나무장작", q: 15 }] } ],
+      { t: 5, name: "거대 송곳니 화석",   qty: 3,  mats: [{ n: "펫 놀이세트", q: 3 }, { n: "건초 더미", q: 9 }, { n: "마력이 깃든 나무장작", q: 15 }] },
+      { t: 6, name: "태양의 도자기",      qty: 2,  mats: [{ n: "탈틴 농장 재스민 향수", q: 2 }, { n: "탈틴 농장 장식용 크리스탈 검", q: 2 }] },
+    ],
   },
   {
     id: "calida", name: "칼리다", icon: "♨️",
     tiers: [
       { t: 3, name: "온천 입욕제",    qty: 10, mats: [{ n: "끈끈이 풀", q: 30 }, { n: "최고급 바닐라 향초", q: 20 }] },
       { t: 4, name: "대형 캠핑 텐트",  qty: 8,  mats: [{ n: "인조 잔디", q: 8 }, { n: "에메랄드 퓨즈", q: 8 }, { n: "고급 가죽끈", q: 40 }] },
-      { t: 5, name: "핑크 솔트",     qty: 3,  mats: [{ n: "미스릴 대못", q: 9 }, { n: "발리스타용 독 묻은 와이번 볼트", q: 9 }, { n: "최고급 나무장작", q: 9 }] } ],
+      { t: 5, name: "핑크 솔트",     qty: 3,  mats: [{ n: "미스릴 대못", q: 9 }, { n: "발리스타용 독 묻은 와이번 볼트", q: 9 }, { n: "최고급 나무장작", q: 9 }] },
+      { t: 6, name: "호박 보석 조각",     qty: 2,  mats: [{ n: "월광 여울 이삭빵 박스", q: 2 }, { n: "적철판", q: 2 }] },
+    ],
   } ];
 
 // 저장 단위: 몇 '명분'을 완성했는지 (0 ~ 담당 인원수)
@@ -661,6 +680,13 @@ function matRowHtml(post, ti, m, fromLabel, orderKey) {
 
   const tierTag = fromLabel ? `<div class="tr-from">${fromLabel}</div>` : "";
 
+  // 담당 배정 선택
+  const whoNow = assigneeOf(m.n).name;
+  const assignSel = `<select class="tr-assign ${whoNow === UNASSIGNED.name ? "none" : ""}" data-mat="${m.n}">
+      ${allAssignees().map(a =>
+        `<option value="${a.name}" ${a.name === whoNow ? "selected" : ""}>${a.icon} ${a.name}</option>`).join("")}
+    </select>`;
+
   // 구매 담당(각자) 품목은 경매장 시세를 함께 표시
   let buyLine = "";
   if (showBuy) {
@@ -688,7 +714,7 @@ function matRowHtml(post, ti, m, fromLabel, orderKey) {
         <span class="tr-cnt-4">${(m.q * cur).toLocaleString()} / ${(m.q * pmax).toLocaleString()}개</span>
       </span>
     </div>
-    ${tierTag}
+    <div class="tr-meta">${tierTag}${assignSel}</div>
     ${buyLine}
     ${recipe}
     <div class="tr-bar"><div style="width:${pct}%"></div></div>
@@ -700,20 +726,21 @@ function matRowHtml(post, ti, m, fromLabel, orderKey) {
 
 // 생활스킬 표시 순서 / 아이콘
 const SKILL_ORDER = ["제련", "제분", "방직", "목공", "포션 조제", "매직 크래프트",
-  "힐웬 공학", "핸디크래프트", "필기구 크래프트", "핀즈 크래프트", "합성", "요리", "직접 수급"];
+  "힐웬 공학", "핸디크래프트", "필기구 크래프트", "핀즈 크래프트", "합성", "요리", "탈틴농장", "직접 수급"];
 const SKILL_ICON = {
   "제련": "⚒️", "제분": "🌾", "방직": "🧵", "목공": "🪵", "포션 조제": "⚗️",
   "매직 크래프트": "✨", "힐웬 공학": "⚙️", "핸디크래프트": "🧶",
-  "필기구 크래프트": "🖋️", "핀즈 크래프트": "🎀", "합성": "🔮", "요리": "🍳", "직접 수급": "📦",
+  "필기구 크래프트": "🖋️", "핀즈 크래프트": "🎀", "합성": "🔮", "요리": "🍳", "탈틴농장": "🌱", "직접 수급": "📦",
 };
 
 // ─── 담당 분담 ───
 // skills: 이 스킬 재료를 통째로 담당 / items: 스킬과 무관하게 이 재료만 따로 담당(우선 적용)
 const TRADE_ASSIGNEES = [
-  { name: "잠댕이",   icon: "⚒️", skills: ["제련", "요리"] },
-  { name: "흑쟈헬스", icon: "⚙️", skills: ["힐웬 공학", "목공"] },
-  { name: "너나들이", icon: "✨", skills: ["매직 크래프트"] },
-  { name: "참선",     icon: "🧵", skills: ["제분", "방직"] },
+  // 담당자는 이름만 두고, 어떤 재료를 맡을지는 앱에서 직접 배정
+  { name: "잠댕이",   icon: "⚒️", skills: [] },
+  { name: "흑쟈헬스", icon: "⚙️", skills: [] },
+  { name: "너나들이", icon: "✨", skills: [] },
+  { name: "참선",     icon: "🧵", skills: [] },
   { name: "각자",     icon: "👥",
     skills: ["합성", "핀즈 크래프트", "필기구 크래프트", "핸디크래프트", "포션 조제"],
     items: ["최고급 가죽끈", "고급 가죽끈"] } ];
@@ -721,11 +748,20 @@ const UNASSIGNED = { name: "미지정", icon: "❓", skills: [] };
 const PARTY_SIZE = 4;                 // 4명이 함께 교역
 const SELF_ASSIGNEE = "각자";          // '각자'는 본인 것만 준비하므로 4명분 계산 제외
 
+// 사용자가 배정한 담당  { 재료명: 담당자이름 }
+let matAssign = JSON.parse(localStorage.getItem("erinn-assign") || "{}");
+function saveAssign() { localStorage.setItem("erinn-assign", JSON.stringify(matAssign)); }
+function allAssignees() { return [...TRADE_ASSIGNEES, UNASSIGNED]; }
+
 function assigneeOf(matName) {
-  const byItem = TRADE_ASSIGNEES.find(a => a.items?.includes(matName));
-  if (byItem) return byItem;
+  const picked = matAssign[matName];
+  if (picked) return allAssignees().find(a => a.name === picked) || UNASSIGNED;
+  // 배정 전이면 '각자'(개인 구매) 기본 규칙만 적용
+  const self = TRADE_ASSIGNEES.find(a => a.name === SELF_ASSIGNEE);
+  if (self?.items?.includes(matName)) return self;
   const skill = CRAFT_RECIPES[matName]?.skill || "직접 수급";
-  return TRADE_ASSIGNEES.find(a => a.skills.includes(skill)) || UNASSIGNED;
+  if (self?.skills.includes(skill)) return self;
+  return UNASSIGNED;
 }
 
 // 담당자별로 재료 묶기 (교역소 구분 없이 통합)
@@ -1305,6 +1341,17 @@ function renderTrade() {
       saveMatOrder();
       renderTrade();
       toast("↩︎ 원래 순서로 되돌렸어요");
+    });
+  });
+
+  // 담당 배정 변경
+  tiersEl.querySelectorAll(".tr-assign").forEach(sel => {
+    sel.addEventListener("click", e => e.stopPropagation());
+    sel.addEventListener("change", () => {
+      matAssign[sel.dataset.mat] = sel.value;
+      saveAssign();
+      renderTrade();
+      toast(`✓ ${sel.value} 담당으로 배정`);
     });
   });
 
