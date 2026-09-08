@@ -417,12 +417,13 @@ const CRAFT_RECIPES = {
   // ── 합성 ──
   "빤짝이 종이": { skill: "합성", mats: [{ n: "작은 녹색구슬", q: 1 }, { n: "작은 은색구슬", q: 1 }, { n: "작은 빨간구슬", q: 1 }, { n: "작은 파란구슬", q: 1 }, { n: "종이", q: 10 }] },
 
-  // ── 6티어 (탈틴농장) ──
-  "탈틴 농장 블랙베리 주스":     { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 재스민", q: 1 }, { n: "탈틴 농장 고급 블랙베리", q: 1 }] },
-  "탈틴 농장 방수 원단":         { skill: "탈틴농장", mats: [{ n: "탈틴 농장 고급 마법 거미줄", q: 1 }, { n: "탈틴 농장 고급 고무", q: 1 }] },
-  "탈틴 농장 퓨어 블러썸 머리핀": { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 재스민", q: 1 }, { n: "탈틴 농장 고급 석영", q: 1 }] },
-  "탈틴 농장 재스민 향수":       { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 재스민", q: 2 }, { n: "탈틴 농장 일반 오크라", q: 1 }, { n: "탈틴 농장 고급 블랙베리", q: 1 }] },
-  "탈틴 농장 장식용 크리스탈 검": { skill: "탈틴농장", mats: [{ n: "탈틴 농장 고급 석영", q: 2 }, { n: "탈틴 농장 일반 오크라", q: 1 }, { n: "탈틴 농장 고급 고무", q: 1 }] },
+  // ── 6티어 (탈틴 농장 · 시즌2) ──
+  // 탈틴 농장에서 직접 제작하는 완제품이라 하위 재료는 따로 계산하지 않음
+  "펄페인트":  { skill: "탈틴농장", mats: [] },
+  "새벽의 활": { skill: "탈틴농장", mats: [] },
+  "붉은 배잼": { skill: "탈틴농장", mats: [] },
+  "레드문":    { skill: "탈틴농장", mats: [] },
+  "자색원단":  { skill: "탈틴농장", mats: [] },
 
   // ── 요리 (재료 비율로 제작) ──
   "새우 조련 미끼": { skill: "요리", ratio: true, mats: [{ n: "설탕", q: 38 }, { n: "마늘", q: 32 }, { n: "새우", q: 30 }] },
@@ -444,7 +445,7 @@ const TRADE_POSTS = [
       { t: 3, name: "스톤 홀스 조각상",   qty: 10, mats: [{ n: "힐웬 합금", q: 20 }, { n: "밀가루", q: 50 }] },
       { t: 4, name: "카루 표고 버섯",      qty: 8,  mats: [{ n: "스핀 기어", q: 8 }, { n: "중급 나무장작", q: 40 }, { n: "고급 실크", q: 32 }] },
       { t: 5, name: "조개 껍질 화석",      qty: 3,  mats: [{ n: "에너지 증폭 장치", q: 6 }, { n: "튼튼한 고리", q: 3 }, { n: "마법의 깃털펜", q: 15 }] },
-      { t: 6, name: "카루숲 수액 향초",   qty: 3,  mats: [{ n: "탈틴 농장 블랙베리 주스", q: 3 }, { n: "탈틴 농장 방수 원단", q: 3 }, { n: "탈틴 농장 퓨어 블러썸 머리핀", q: 3 }] },
+      { t: 6, name: "카루숲 수액 향초",   qty: 3,  mats: [{ n: "붉은 배잼", q: 3 }, { n: "레드문", q: 3 }, { n: "자색원단", q: 3 }] },
     ],
   },
   {
@@ -453,7 +454,7 @@ const TRADE_POSTS = [
       { t: 3, name: "오아시스 그림",      qty: 10, mats: [{ n: "최고급 가죽끈", q: 10 }, { n: "질긴 실", q: 30 }] },
       { t: 4, name: "선인장 꽃",         qty: 8,  mats: [{ n: "정령의 리큐르", q: 8 }, { n: "은판", q: 16 }, { n: "고급 옷감", q: 32 }] },
       { t: 5, name: "거대 송곳니 화석",   qty: 3,  mats: [{ n: "펫 놀이세트", q: 3 }, { n: "건초 더미", q: 9 }, { n: "마력이 깃든 나무장작", q: 15 }] },
-      { t: 6, name: "태양의 도자기",      qty: 2,  mats: [{ n: "탈틴 농장 재스민 향수", q: 2 }, { n: "탈틴 농장 장식용 크리스탈 검", q: 2 }] },
+      { t: 6, name: "태양의 도자기",      qty: 2,  mats: [{ n: "펄페인트", q: 2 }, { n: "새벽의 활", q: 2 }] },
     ],
   },
   {
@@ -465,8 +466,17 @@ const TRADE_POSTS = [
     ],
   } ];
 
-// 저장 단위: 몇 '명분'을 완성했는지 (0 ~ 담당 인원수)
+// 저장 단위: 몇 '명분'을 완성했는지 (0 ~ 담당 인원수 × 준비 주차)
 let tradeState = JSON.parse(localStorage.getItem("erinn-trade-party") || "{}");
+
+// 한 번에 몇 주치를 준비할지 (1주 = 이번 주 한 번 교역할 분량)
+const WEEK_CHOICES = [1, 2, 4, 8, 16];
+let tradeWeeks = parseInt(localStorage.getItem("erinn-trade-weeks") || "1", 10);
+if (!WEEK_CHOICES.includes(tradeWeeks)) tradeWeeks = 1;
+function setTradeWeeks(w) {
+  tradeWeeks = w;
+  localStorage.setItem("erinn-trade-weeks", String(w));
+}
 let tradePost  = localStorage.getItem("erinn-trade-post") || TRADE_POSTS[0].id;
 let tradeOpen  = {};   // 펼쳐진 티어
 let tradeRemainOnly = localStorage.getItem("erinn-trade-remain") === "1";
@@ -550,7 +560,9 @@ function saveTrade() { localStorage.setItem("erinn-trade-party", JSON.stringify(
 function syncTradeWeek() {
   const { weekKey } = hwPeriodKeys();
   if (tradeState.__week !== weekKey) {
-    tradeState = { __week: weekKey };          // 지난주 진행 비우기
+    // 여러 주치를 미리 모으는 중이면 쌓아둔 재료는 그대로 두고 주차만 갱신
+    if (tradeWeeks > 1) tradeState.__week = weekKey;
+    else tradeState = { __week: weekKey };     // 1주 모드는 지난주 진행 비우기
     localStorage.setItem("erinn-trade-party", JSON.stringify(tradeState));
   }
   if (routeState.__week !== weekKey) {
@@ -579,6 +591,15 @@ function partyMaxOf(matName) {
   return assigneeOf(matName).name === SELF_ASSIGNEE ? 1 : PARTY_SIZE;
 }
 
+// 준비 주차까지 반영한 최종 목표 (예: 4명분 × 16주 = 64명분)
+function unitsMaxOf(matName) { return partyMaxOf(matName) * tradeWeeks; }
+
+// 목표 단위 표기 ('4명분' / '16인분') — 몇 주치인지는 위쪽 주차 바에 이미 있음
+function unitLabel(pmax) {
+  const total = pmax * tradeWeeks;
+  return pmax === 1 ? `${total}인분` : `${total}명분`;
+}
+
 function matKey(postId, tier, matName) { return `${postId}|${tier}|${matName}`; }
 function matCount(postId, tier, matName) { return tradeState[matKey(postId, tier, matName)] || 0; }
 function setMatCount(postId, tier, matName, v, max) {
@@ -605,7 +626,7 @@ function directMats(name, need) {
 function expandToRaw(name, need, out = {}, depth = 0) {
   const rc = CRAFT_RECIPES[name];
   const mats = recipeMats(name);
-  if (!mats || rc?.ratio || depth > 8) {
+  if (!mats || mats.length === 0 || rc?.ratio || depth > 8) {
     out[name] = (out[name] || 0) + need;
     return out;
   }
@@ -630,7 +651,7 @@ function postProgress(post) {
   let done = 0, total = 0;
   post.tiers.forEach(ti => ti.mats.forEach(m => {
     total++;
-    if (matCount(post.id, ti.t, m.n) >= partyMaxOf(m.n)) done++;
+    if (matCount(post.id, ti.t, m.n) >= unitsMaxOf(m.n)) done++;
   }));
   return { done, total };
 }
@@ -638,17 +659,18 @@ function postProgress(post) {
 // 재료 한 줄 (모든 보기 공용). fromLabel을 주면 출처(교역소·티어)를 배지로 표시
 function matRowHtml(post, ti, m, fromLabel, orderKey) {
   const showBuy = assigneeOf(m.n).name === SELF_ASSIGNEE;   // 각자 품목이면 구매 시세 표시
-  const pmax = partyMaxOf(m.n);                                  // 준비할 인원수 (각자=1)
-  const cur  = Math.min(matCount(post.id, ti.t, m.n), pmax);     // 완성한 명분
-  const done = cur >= pmax;
-  const pct  = Math.round((cur / pmax) * 100);
-  const unit = pmax === 1 ? "1인분" : `${pmax}명분`;
+  const pmax = partyMaxOf(m.n);                                  // 1주분 = 몇 명분 (각자=1)
+  const umax = unitsMaxOf(m.n);                                  // 최종 목표 (주차 반영)
+  const cur  = Math.min(matCount(post.id, ti.t, m.n), umax);     // 완성한 명분
+  const done = cur >= umax;
+  const pct  = Math.round((cur / umax) * 100);
+  const unit = unitLabel(pmax);
   const rc   = CRAFT_RECIPES[m.n];
 
   // 필요량은 담당 인원수 기준(각자=1인분), 남은 수량도 함께 표기
   const both = (q) => {
-    const total  = q * pmax;
-    const remain = q * (pmax - cur);
+    const total  = q * umax;
+    const remain = q * (umax - cur);
     const badge = remain === 0
       ? `<span class="q-done">완료</span>`
       : `<span class="q4">남은 ${remain.toLocaleString()}개</span>`;
@@ -659,6 +681,8 @@ function matRowHtml(post, ti, m, fromLabel, orderKey) {
   if (rc && rc.ratio) {
     const ratioStr = recipeMats(m.n).map(d => `${d.n} ${d.q}`).join(" : ");
     recipe = `<div class="tr-mat-recipe"><span class="rc-skill">${rc.skill} ·</span> ${ratioStr} <span class="rc-skill">(비율)</span></div>`;
+  } else if (rc && recipeMats(m.n).length === 0) {
+    recipe = `<div class="tr-mat-recipe"><span class="rc-skill">${rc.skill}</span>에서 제작</div>`;
   } else if (rc) {
     const dir = directMats(m.n, m.q);
     const raw = Object.entries(expandToRaw(m.n, m.q));
@@ -690,14 +714,29 @@ function matRowHtml(post, ti, m, fromLabel, orderKey) {
       : pc.price == null
         ? `<div class="tr-buy none">구매 · 매물 없음</div>`
         : `<div class="tr-buy">구매 · 개당 ${pc.price.toLocaleString()}G
-             <b>총 ${(pc.price * m.q * pmax).toLocaleString()}G</b></div>`;
+             <b>총 ${(pc.price * m.q * umax).toLocaleString()}G</b></div>`;
   }
   const mover = orderKey
     ? `<span class="tr-move" data-key="${orderKey}" data-mat="${m.n}">
          <button data-dir="-1" title="위로">▲</button><button data-dir="1" title="아래로">▼</button>
        </span>` : "";
-  const btns = Array.from({ length: pmax + 1 }, (_, i) =>
-    `<button class="${i === cur ? "on" : ""}" data-n="${i}">${i}</button>`).join("");
+  const boxAttr = `data-post="${post.id}" data-tier="${ti.t}" data-mat="${m.n}" data-max="${umax}"`;
+  let ctrl;
+  if (tradeWeeks === 1) {
+    const btns = Array.from({ length: pmax + 1 }, (_, i) =>
+      `<button class="${i === cur ? "on" : ""}" data-n="${i}">${i}</button>`).join("");
+    ctrl = `<div class="tr-party" ${boxAttr}>
+      <span class="tr-party-label">완성</span>${btns}<span class="tr-party-unit">명분</span>
+    </div>`;
+  } else {
+    const wkBtn = (d, txt) => pmax === 1 ? "" : `<button class="wk" data-d="${d}">${txt}</button>`;
+    ctrl = `<div class="tr-party step" ${boxAttr}>
+      ${wkBtn(-pmax, "−1주")}<button data-d="-1">−</button>
+      <span class="tr-step-cnt"><b>${cur}</b><i>/ ${unit}</i></span>
+      <button data-d="1">+</button>${wkBtn(pmax, "+1주")}
+      <button class="all" data-set="${done ? 0 : umax}">${done ? "해제" : "전부"}</button>
+    </div>`;
+  }
 
   return `
   <div class="tr-mat ${done ? "done" : ""}">
@@ -705,16 +744,14 @@ function matRowHtml(post, ti, m, fromLabel, orderKey) {
       <span class="tr-mat-name">${mover}${done ? "✅ " : ""}${m.n}</span>
       <span class="tr-mat-count">
         <span class="tr-cnt-1"><b>${cur}</b> / ${unit} 완성</span>
-        <span class="tr-cnt-4">${(m.q * cur).toLocaleString()} / ${(m.q * pmax).toLocaleString()}개</span>
+        <span class="tr-cnt-4">${(m.q * cur).toLocaleString()} / ${(m.q * umax).toLocaleString()}개</span>
       </span>
     </div>
     <div class="tr-meta">${tierTag}${assignSel}</div>
     ${buyLine}
     ${recipe}
     <div class="tr-bar"><div style="width:${pct}%"></div></div>
-    <div class="tr-party" data-post="${post.id}" data-tier="${ti.t}" data-mat="${m.n}" data-max="${pmax}">
-      <span class="tr-party-label">완성</span>${btns}<span class="tr-party-unit">명분</span>
-    </div>
+    ${ctrl}
   </div>`;
 }
 
@@ -1004,9 +1041,9 @@ function rawTotalsBySkill(posts, onlyRemaining, mode = "skill") {
     const who = assigneeOf(m.n).name;
     if (mode === "assignee" && who === SELF_ASSIGNEE) return;   // 각자는 구매하므로 채집 목록에서 제외
     const key = mode === "assignee" ? who : (CRAFT_RECIPES[m.n]?.skill || "직접 수급");
-    const pmax  = partyMaxOf(m.n);
-    const cur   = Math.min(matCount(post.id, ti.t, m.n), pmax);
-    const packs = onlyRemaining ? Math.max(0, pmax - cur) : pmax;   // 남은 명분
+    const umax  = unitsMaxOf(m.n);
+    const cur   = Math.min(matCount(post.id, ti.t, m.n), umax);
+    const packs = onlyRemaining ? Math.max(0, umax - cur) : umax;   // 남은 명분
     if (packs <= 0) return;
 
     byKey[key] = byKey[key] || {};
@@ -1031,7 +1068,7 @@ function rawTotalsBySkill(posts, onlyRemaining, mode = "skill") {
   const groups = order.filter(k => byKey[k]).map(k => ({
     skill: k,
     icon: iconOf(k),
-    per: mode === "assignee" ? (k === SELF_ASSIGNEE ? "1인분" : `${PARTY_SIZE}명분`) : "",
+    per: mode === "assignee" ? unitLabel(k === SELF_ASSIGNEE ? 1 : PARTY_SIZE) : "",
     rows: Object.entries(byKey[k]).sort((a, b) => b[1][0] - a[1][0]),
   }));
   return { groups, distinctCount: distinct.size };
@@ -1070,6 +1107,22 @@ function renderTrade() {
     <button class="${tradeView === "all" ? "on" : ""}" data-view="all">전체 통합</button>
     <button class="${tradeView === "route" ? "on" : ""}" data-view="route">루트</button>
   </div>`;
+
+  if (tradeView !== "route") {
+    html += `
+    <div class="weeks-bar">
+      <div class="wk-top">
+        <span class="wk-label">📦 몇 주치를 준비할까요?</span>
+        <span class="wk-cur">${tradeWeeks}주치</span>
+      </div>
+      <div class="wk-btns">
+        ${WEEK_CHOICES.map(w => `<button class="${w === tradeWeeks ? "on" : ""}" data-weeks="${w}">${w}주</button>`).join("")}
+      </div>
+      <div class="wk-note">${tradeWeeks > 1
+        ? `필요 재료가 ${tradeWeeks}배로 계산됩니다 · 모아둔 진행은 월요일에 초기화되지 않아요`
+        : `이번 주 한 번 교역할 분량 · 월요일 오전 6시에 초기화됩니다`}</div>
+    </div>`;
+  }
 
   if (tradeView === "route") {
     // ── 물물교역 루트: 1~4차 판매 루트 진행 ──
@@ -1112,12 +1165,12 @@ function renderTrade() {
     const groups = groupByAssignee(TRADE_POSTS);
     const totalMats = groups.reduce((s, g) => s + g.items.length, 0);
     const totalDone = groups.reduce((s, g) =>
-      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length, 0);
+      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length, 0);
 
     html += `<div class="all-summary">👥 담당 ${groups.length}명 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료
-      <div class="all-sub">담당 4명이 ${PARTY_SIZE}명분씩 제작 · '${SELF_ASSIGNEE}'는 각 개인이 1인분씩 구매</div></div>`;
+      <div class="all-sub">담당 4명이 ${PARTY_SIZE * tradeWeeks}명분씩 제작 · '${SELF_ASSIGNEE}'는 각 개인이 ${tradeWeeks}인분씩 구매</div></div>`;
     html += groups.map(g => {
-      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length;
+      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length;
       const allDone = doneCnt === g.items.length;
       const open = !!tradeOpen[`who|${g.who.name}`];   // 기본 닫힘
       // 담당자 안에서도 스킬끼리 붙여서 보기 좋게 정렬
@@ -1138,7 +1191,7 @@ function renderTrade() {
       let buyHead = "";
       if (isSelf) {
         const known = ordered.filter(({ m }) => priceOf(m.n)?.price != null);
-        const cost = known.reduce((s, { m }) => s + priceOf(m.n).price * m.q * partyMaxOf(m.n), 0);
+        const cost = known.reduce((s, { m }) => s + priceOf(m.n).price * m.q * unitsMaxOf(m.n), 0);
         buyHead = `${cost > 0 ? `<span class="raw-cost">약 ${cost.toLocaleString()}G</span>` : ""}
           <button class="raw-price-btn" data-buygroup="1" ${priceLoading === "각자" ? "disabled" : ""}>
             ${priceLoading === "각자" ? "⏳" : "💰 시세"}</button>`;
@@ -1149,7 +1202,7 @@ function renderTrade() {
           <div>
             <div class="tier-title"><span class="t-badge">${g.who.icon}</span>${g.who.name}</div>
             <div class="tier-sub">${isSelf ? "개인 구매" : skillNames.join(" · ")} · 재료 ${g.items.length}종
-              <span class="who-per ${isSelf ? "one" : ""}">${isSelf ? "1인분" : PARTY_SIZE + "명분"}</span></div>
+              <span class="who-per ${isSelf ? "one" : ""}">${unitLabel(isSelf ? 1 : PARTY_SIZE)}</span></div>
           </div>
           <div class="tier-right">
             ${matOrder[oKey] && orderChanged(oKey, sorted)
@@ -1167,11 +1220,11 @@ function renderTrade() {
     const groups = groupBySkill(TRADE_POSTS);
     const totalMats = groups.reduce((s, g) => s + g.items.length, 0);
     const totalDone = groups.reduce((s, g) =>
-      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length, 0);
+      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length, 0);
 
     html += `<div class="all-summary">🚢 교역소 4곳 전체 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료</div>`;
     html += groups.map(g => {
-      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= partyMaxOf(m.n)).length;
+      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length;
       const allDone = doneCnt === g.items.length;
       const open = !!tradeOpen[`all|skill|${g.skill}`];   // 기본 닫힘
       const oKey = `skill|${g.skill}`;
@@ -1362,7 +1415,7 @@ function renderTrade() {
     });
   });
 
-  // 명분 선택 (0 ~ N명분 완성)
+  // 완성 수량 입력 (버튼 선택 또는 ＋/− 스테퍼)
   tiersEl.querySelectorAll(".tr-party").forEach(box => {
     const pid  = box.dataset.post;
     const tier = parseInt(box.dataset.tier, 10);
@@ -1371,12 +1424,30 @@ function renderTrade() {
     box.querySelectorAll("button").forEach(btn => {
       btn.addEventListener("click", e => {
         e.stopPropagation();
-        const n = parseInt(btn.dataset.n, 10);
-        // 선택된 걸 다시 누르면 한 칸 되돌리기
-        const next = (n === matCount(pid, tier, mat)) ? n - 1 : n;
+        const cur = Math.min(matCount(pid, tier, mat), max);
+        let next;
+        if (btn.dataset.n !== undefined) {
+          const n = parseInt(btn.dataset.n, 10);
+          next = (n === cur) ? n - 1 : n;      // 같은 걸 다시 누르면 한 칸 되돌리기
+        } else if (btn.dataset.set !== undefined) {
+          next = parseInt(btn.dataset.set, 10);
+        } else {
+          next = cur + parseInt(btn.dataset.d, 10);
+        }
         setMatCount(pid, tier, mat, next, max);
+        const y = window.scrollY;
         renderTrade();
+        window.scrollTo(0, y);                 // 스테퍼를 여러 번 눌러도 화면이 튀지 않게
       });
+    });
+  });
+
+  // 준비 주차 선택
+  tiersEl.querySelectorAll(".weeks-bar button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      setTradeWeeks(parseInt(btn.dataset.weeks, 10));
+      renderTrade();
+      toast(`✓ ${tradeWeeks}주치 기준으로 계산합니다`);
     });
   });
 }

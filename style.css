@@ -449,6 +449,24 @@ body {
 .tr-bar > div { height: 100%; background: var(--amber); border-radius: 3px; transition: width .25s; }
 .tr-mat.done .tr-bar > div { background: var(--green); }
 
+/* 준비 주차 선택 */
+.weeks-bar {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 12px 14px; margin-bottom: 12px; box-shadow: var(--sh);
+}
+.wk-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
+.wk-label { font-size: 13px; font-weight: 700; color: var(--text); }
+.wk-cur { font-size: 14px; font-weight: 800; color: var(--primary); }
+.wk-btns { display: flex; gap: 6px; }
+.wk-btns button {
+  flex: 1; background: var(--card-soft); border: 1px solid var(--line); color: var(--text-2);
+  border-radius: var(--r-sm); padding: 9px 0; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+}
+.wk-btns button.on { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: var(--sh); }
+.wk-btns button:active { transform: scale(.96); }
+.wk-note { margin-top: 8px; font-size: 11px; color: var(--text-3); line-height: 1.5; }
+
 /* 명분 선택 */
 .tr-party { display: flex; align-items: center; gap: 4px; }
 .tr-party-label, .tr-party-unit { font-size: 11px; color: var(--text-3); flex-shrink: 0; }
@@ -459,6 +477,17 @@ body {
 .tr-party button.on { background: var(--green); border-color: var(--green); color: #fff; }
 .tr-party button:active { background: #e9edf5; }
 .tr-party button.on:active { background: #0e8944; }
+
+/* 여러 주치 준비 모드: ＋/− 스테퍼 */
+.tr-party.step { gap: 5px; }
+.tr-party.step button { flex: 0 0 auto; min-width: 38px; padding: 8px 6px; font-size: 13px; }
+.tr-party.step button.wk { min-width: 46px; font-size: 12px; color: var(--primary); background: var(--primary-l); border-color: var(--primary-l); }
+.tr-party.step button.all { margin-left: auto; min-width: 46px; font-size: 12px; color: var(--green); background: var(--green-l); border-color: var(--green-l); }
+.tr-mat.done .tr-party.step button.all { color: var(--text-2); background: var(--card-soft); border-color: var(--line); }
+.tr-step-cnt { flex: 1; text-align: center; font-size: 12px; color: var(--text-3); white-space: nowrap; }
+.tr-step-cnt b { font-size: 17px; font-weight: 800; color: var(--text); margin-right: 3px; }
+.tr-step-cnt i { font-style: normal; }
+.tr-mat.done .tr-step-cnt b { color: var(--green); }
 
 /* 순서 이동 */
 .tr-move { display: inline-flex; gap: 2px; margin-right: 7px; }
