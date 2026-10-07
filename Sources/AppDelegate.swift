@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKUI
 
     // 미니 시계 (항상 위)
     var miniWindow: NSPanel?
+    var statusItem: NSStatusItem?
     var miniLabel: NSTextField?
     var miniPeriod: NSTextField?
     var miniTasks: NSTextField?
@@ -86,6 +87,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKUI
             keyEquivalent: "q"
         ))
         NSApp.mainMenu = menu
+
+        // 메뉴바 시계 (앱 창을 닫아도 에린 시간이 계속 보임)
+        let si = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        si.button?.font = .monospacedDigitSystemFont(ofSize: 13, weight: .regular)
+        si.button?.target = self
+        si.button?.action = #selector(statusClicked)
+        statusItem = si
+    }
+
+    @objc func statusClicked() {
+        dismissNativeAlarm()
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKeyAndOrderFront(nil)
     }
 
     // ─── 에린 시간 계산 (renderer.js와 동일 공식) ───
@@ -133,6 +147,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKUI
                 fireAlarm(label: label, sub: "작업 완료! 🎉")
             }
         }
+
+        // 메뉴바 시계 갱신
+        let sd = erinnDisplay(et.h, et.m)
+        statusItem?.button?.title = alarmActive ? "⏰ \(alarmText)" : "🌙 \(sd.period) \(sd.time)"
 
         // 미니 시계 갱신
         if miniWindow != nil {
