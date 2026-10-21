@@ -53,43 +53,14 @@
 
   <!-- ═══ 탭: 홈 ═══ -->
   <div class="tab-panel" id="tab-home">
-    <!-- 에린 시계 카드 -->
-    <div class="clock-card" id="clock-card">
-      <div class="clock-label" id="clock-label">에린 시간 · 낮</div>
-      <div class="clock-icon" id="clock-icon">☀️</div>
-      <div class="clock-time">
-        <span class="clock-period" id="clock-period">오후</span>
-        <span class="clock-digits" id="clock-digits">12:00</span>
-      </div>
-      <div class="clock-seconds" id="clock-seconds">00초</div>
-      <div class="progress-wrap">
-        <div class="progress-meta">
-          <span>자정</span>
-          <span id="progress-pct">0% 진행</span>
-          <span>자정</span>
-        </div>
-        <div class="progress-bar-bg">
-          <div class="progress-bar-fill" id="progress-fill"></div>
-        </div>
-        <div class="progress-ticks">
-          <span>00</span><span>06</span><span>12</span><span>18</span><span>24</span>
-        </div>
-      </div>
+    <!-- 에린 시계 (맨 위 고정) -->
+    <div class="clock-dock">
+    <div class="clock-bar" id="clock-card">
+      <span class="clock-icon" id="clock-icon">☀️</span>
+      <span class="clock-period" id="clock-period">오후</span>
+      <span class="clock-digits" id="clock-digits">12:00</span>
+      <span class="clock-alarm" id="clock-alarm" hidden></span>
     </div>
-
-    <!-- 현실 시간 -->
-    <div class="real-time" id="real-time">현실 시간 <span>--:--:--</span></div>
-
-    <!-- 미니 시계 토글 (맥 앱 전용) -->
-    <button class="btn-mini-clock" id="btn-mini-clock">🕐 미니 시계 항상 띄우기</button>
-
-    <!-- 알람 목록 -->
-    <div class="alarm-header">
-      <h2>알람 목록</h2>
-      <button class="btn-add" id="btn-add">+ 추가</button>
-    </div>
-    <div id="alarm-list">
-      <div class="alarm-empty">알람이 없어요.<br><span style="color:var(--text-3)">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>
     </div>
 
     <!-- 매일 할일 -->
@@ -117,6 +88,16 @@
 
   <!-- ═══ 탭: 작업 ═══ -->
   <div class="tab-panel" id="tab-work" style="display:none">
+    <!-- 알람 목록 -->
+    <div class="alarm-header">
+      <h2>⏰ 에린 알람</h2>
+      <button class="btn-add" id="btn-add">+ 추가</button>
+    </div>
+    <div id="alarm-list">
+      <div class="alarm-empty">알람이 없어요.<br><span style="color:var(--text-3)">+ 추가 버튼으로 에린 시간 알람을 설정하세요.</span></div>
+    </div>
+    <button class="btn-mini-clock" id="btn-mini-clock">🕐 미니 시계 항상 띄우기</button>
+
     <!-- 작업 타이머 -->
     <div class="alarm-header" style="margin-top:8px">
       <h2>⚒️ 작업 타이머</h2>

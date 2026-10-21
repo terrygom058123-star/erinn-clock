@@ -2000,14 +2000,10 @@ initPush();
 
 // ─── DOM 참조 ─────────────────────────────────────────────
 const clockCard    = document.getElementById("clock-card");
-const clockLabel   = document.getElementById("clock-label");
 const clockIcon    = document.getElementById("clock-icon");
 const clockPeriod  = document.getElementById("clock-period");
 const clockDigits  = document.getElementById("clock-digits");
-const clockSeconds = document.getElementById("clock-seconds");
-const progressFill = document.getElementById("progress-fill");
-const progressPct  = document.getElementById("progress-pct");
-const realTimeEl   = document.getElementById("real-time");
+const clockAlarm   = document.getElementById("clock-alarm");
 const alarmList    = document.getElementById("alarm-list");
 const alertOverlay = document.getElementById("alert-overlay");
 const alertName    = document.getElementById("alert-name");
@@ -2039,20 +2035,10 @@ function tick() {
   // 알람 발동 중(웹)에는 카드가 빨갛게 깜빡이므로 배경/라벨을 덮어쓰지 않음
   if (!activeAlert) {
     clockCard.style.background = `linear-gradient(135deg, ${theme.from}, ${theme.to})`;
-    clockLabel.textContent  = `에린 시간 · ${theme.label}`;
   }
   clockIcon.textContent   = theme.icon;
   clockPeriod.textContent = period;
   clockDigits.textContent = display;
-  clockSeconds.textContent = `${pad(et.seconds)}초`;
-
-  const pct = Math.round(et.progress * 100);
-  progressPct.textContent = `에린 하루 ${pct}% 진행`;
-  progressFill.style.width = `${pct}%`;
-  progressFill.style.backgroundColor = theme.bar;
-
-  const now = new Date();
-  realTimeEl.innerHTML = `현실 시간 <span>${now.toLocaleTimeString("ko-KR")}</span>`;
 
   // 웹 미니 시계(PiP) 갱신
   if (typeof updatePiP === "function") updatePiP();
@@ -2093,11 +2079,13 @@ function flashClockCard(label, sub) {
   clockCard.style.background = "";              // CSS 애니메이션이 색 제어
   clockCard.classList.add("alarm-flash");
   // 어떤 알람인지(이름 + 에린 시각) + 끄기 안내
-  clockLabel.textContent = sub ? `⏰ ${label} · ${sub} · 눌러서 끄기`
+  clockAlarm.hidden = false;
+  clockAlarm.textContent = sub ? `⏰ ${label} · ${sub} · 눌러서 끄기`
                                : `⏰ ${label} · 눌러서 끄기`;
 }
 function clearClockFlash() {
   clockCard.classList.remove("alarm-flash");
+  clockAlarm.hidden = true;
 }
 
 function dismissAlert() {
