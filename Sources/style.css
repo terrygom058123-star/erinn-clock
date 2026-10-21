@@ -699,16 +699,17 @@ body {
   border: 1px solid var(--line); color: var(--text-2); border-radius: 999px;
   padding: 6px 13px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: var(--sh);
 }
+.ck-list {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 2px 14px; box-shadow: var(--sh);
+}
 .ck-row {
-  display: flex; align-items: center; gap: 10px; cursor: pointer;
-  padding: 10px 2px; border-bottom: 1px solid var(--line-soft);
+  display: flex; align-items: center; gap: 11px; cursor: pointer;
+  padding: 11px 0; border-bottom: 1px solid var(--line-soft);
 }
 .ck-row:last-child { border-bottom: none; }
-.ck-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
-.ck-tier {
-  font-size: 10px; font-weight: 700; color: var(--text-3); background: var(--card-soft);
-  border-radius: 999px; padding: 2px 7px; margin-left: 6px; vertical-align: 1px;
-}
+.ck-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+.ck-from { display: block; font-size: 11px; font-weight: 500; color: var(--text-3); margin-top: 2px; }
 .ck-qty { text-align: right; flex-shrink: 0; line-height: 1.35; }
 .ck-one { display: block; font-size: 11px; color: var(--text-3); }
 .ck-qty b { font-size: 13px; color: var(--primary); }

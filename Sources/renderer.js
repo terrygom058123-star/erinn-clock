@@ -1301,11 +1301,11 @@ function renderTrade() {
       </div>`;
     }).join("");
   } else {
-    // ── 출발 점검: 교역 가기 전에 재료가 인벤토리에 있는지 확인 ──
+    // ── 출발 점검: 교역 가기 전에 재료가 인벤토리에 있는지 한 줄씩 확인 ──
     // 수량은 '이번 교역 한 번' 기준 (준비 주차와 무관)
     let total = 0, done = 0;
-    const cards = TRADE_POSTS.map(post => {
-      const rows = post.tiers.map(ti => ti.mats.map(m => {
+    const rows = TRADE_POSTS.flatMap(post =>
+      post.tiers.flatMap(ti => ti.mats.map(m => {
         const key = checkKey(post.id, ti.t, m.n);
         const ok  = !!checkState[key];
         total++; if (ok) done++;
@@ -1313,37 +1313,20 @@ function renderTrade() {
         return `
         <div class="ck-row ${ok ? "done" : ""}" data-key="${key}">
           <div class="hw-check">${ok ? "✓" : ""}</div>
-          <div class="ck-name">${m.n}<span class="ck-tier">${ti.t}티어</span></div>
+          <div class="ck-name">${m.n}
+            <span class="ck-from">${post.icon} ${post.name} · ${ti.t}티어</span>
+          </div>
           <div class="ck-qty">${per === 1
             ? `<span class="ck-one">각자 준비</span><b>1인 ${m.q.toLocaleString()}개</b>`
             : `<span class="ck-one">1인 ${m.q.toLocaleString()}개</span><b>${PARTY_SIZE}인 ${(m.q * per).toLocaleString()}개</b>`}
           </div>
         </div>`;
-      }).join("")).join("");
-      const pTotal = post.tiers.reduce((n, ti) => n + ti.mats.length, 0);
-      const pDone  = post.tiers.reduce((n, ti) =>
-        n + ti.mats.filter(m => checkState[checkKey(post.id, ti.t, m.n)]).length, 0);
-      const open = !!tradeOpen[`ck|${post.id}`];
-      return `
-      <div class="tier-card ${pDone === pTotal ? "done" : ""} ${open ? "open" : ""}" data-ck="${post.id}">
-        <div class="tier-head">
-          <div>
-            <div class="tier-title"><span class="t-badge">${post.icon}</span>${post.name}</div>
-            <div class="tier-sub">재료 ${pTotal}종</div>
-          </div>
-          <div class="tier-right">
-            <span class="tier-prog">${pDone}/${pTotal}</span>
-            <span class="tier-arrow">▶</span>
-          </div>
-        </div>
-        <div class="tier-body">${rows}</div>
-      </div>`;
-    }).join("");
+      }))).join("");
 
     html += `<div class="all-summary">🎒 출발 전 점검 · 재료 ${total}종 중 <b>${done}종</b> 확인
       <div class="all-sub">교역 한 번 분량 (${PARTY_SIZE}인 기준) · 월요일에 자동으로 비워집니다</div></div>`;
     html += `<button class="ck-reset" id="btn-check-reset">점검표 비우기</button>`;
-    html += cards;
+    html += `<div class="ck-list">${rows}</div>`;
   }
   tiersEl.innerHTML = html;
 
@@ -1369,15 +1352,6 @@ function renderTrade() {
       if (!confirm("점검 체크를 모두 지울까요?")) return;
       checkState = { __week: hwPeriodKeys().weekKey };
       saveCheck(); renderTrade();
-    });
-    tiersEl.querySelectorAll(".tier-head").forEach(head => {
-      head.addEventListener("click", () => {
-        const card = head.closest(".tier-card");
-        if (!card.dataset.ck) return;
-        const k = `ck|${card.dataset.ck}`;
-        tradeOpen[k] = !tradeOpen[k];
-        renderTrade();
-      });
     });
     return;   // 점검 보기는 원재료 총합 카드 없음
   }
