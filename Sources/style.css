@@ -681,3 +681,6 @@ body {
 .hw-sub .hw-check { width: 19px; height: 19px; font-size: 12px; }
 .hw-sub .hw-name { font-size: 13px; }
 .hw-sub.done .hw-name { text-decoration: line-through; color: var(--text-3); }
+.hw-sub { align-items: flex-start; }
+.hw-sub .hw-name { line-height: 1.45; word-break: keep-all; }
+.hw-sub .hw-check { margin-top: 1px; }
