@@ -686,7 +686,7 @@ body {
 .hw-sub .hw-name { line-height: 1.45; word-break: keep-all; }
 .hw-sub .hw-check { margin-top: 1px; }
 
-/* 매일 / 주간 할일 접기 */
-.hw-sec-head { cursor: pointer; user-select: none; }
-.hw-sec-arrow { display: inline-block; font-size: 10px; color: var(--text-3); margin-right: 5px; transition: transform .2s; }
-.hw-sec-head.open .hw-sec-arrow { transform: rotate(90deg); }
+/* 접을 수 있는 섹션 머리줄 */
+.sec-head { cursor: pointer; user-select: none; }
+.sec-arrow { display: inline-block; font-size: 10px; color: var(--text-3); margin-right: 5px; transition: transform .2s; }
+.sec-head.open .sec-arrow { transform: rotate(90deg); }

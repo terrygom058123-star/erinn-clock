@@ -189,8 +189,6 @@ if (!hwList.weekly) hwList.weekly = [];
 }
 // 펼침 상태는 앱을 껐다 켜도 유지
 let hwOpen = JSON.parse(localStorage.getItem("erinn-hw-open") || "{}");
-// 매일 / 주간 섹션 접기 (기본 펼침)
-let hwSecOpen = JSON.parse(localStorage.getItem("erinn-hw-sec") || '{"daily":true,"weekly":true}');
 function saveHwList() { localStorage.setItem("erinn-hw-list", JSON.stringify(hwList)); }
 function newHwId() { return "h" + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
 
@@ -342,20 +340,6 @@ function renderHomework() {
       openHwModal(btn.dataset.kind, btn.dataset.id);
     });
   }));
-
-  // 섹션 접기/펼치기
-  document.querySelectorAll(".hw-sec-head").forEach(head => {
-    const sec  = head.dataset.sec;
-    const open = hwSecOpen[sec] !== false;
-    head.classList.toggle("open", open);
-    (sec === "daily" ? dailyEl : weeklyEl).style.display = open ? "" : "none";
-    head.onclick = e => {
-      if (e.target.closest("button")) return;      // + 추가 버튼은 그대로
-      hwSecOpen[sec] = !open;
-      localStorage.setItem("erinn-hw-sec", JSON.stringify(hwSecOpen));
-      renderHomework();
-    };
-  });
 
   // 진행 카운트
   const dDone = hwList.daily.filter(hwItemDone).length;
@@ -1639,6 +1623,25 @@ function esc(t) {
   document.getElementById("horn-q")?.addEventListener("input", () => renderHorn());
   renderHorn();
 }
+
+// ─── 접을 수 있는 섹션 ─────────────────────────────────────
+// 머리줄(.sec-head)을 누르면 data-body가 가리키는 내용이 접힌다. 기본은 펼침.
+let secOpen = JSON.parse(localStorage.getItem("erinn-sec-open") || "{}");
+function applySection(head) {
+  const open = secOpen[head.dataset.sec] !== false;
+  head.classList.toggle("open", open);
+  const body = document.getElementById(head.dataset.body);
+  if (body) body.style.display = open ? "" : "none";
+}
+document.querySelectorAll(".sec-head").forEach(head => {
+  applySection(head);
+  head.addEventListener("click", e => {
+    if (e.target.closest("button")) return;        // 머리줄의 +추가 · 🔄 는 그대로
+    secOpen[head.dataset.sec] = secOpen[head.dataset.sec] === false;
+    localStorage.setItem("erinn-sec-open", JSON.stringify(secOpen));
+    applySection(head);
+  });
+});
 
 function showTab(name) {
   document.querySelectorAll(".tab-panel").forEach(p => {

@@ -65,8 +65,8 @@
     </div>
 
     <!-- 매일 할일 -->
-    <div class="alarm-header hw-sec-head" data-sec="daily" style="margin-top:8px">
-      <h2><span class="hw-sec-arrow">▶</span>☀️ 매일 할일 <span id="hw-daily-count" style="font-size:13px;color:var(--text-3);font-weight:400"></span></h2>
+    <div class="alarm-header sec-head" data-sec="daily" data-body="hw-daily" style="margin-top:8px">
+      <h2><span class="sec-arrow">▶</span>☀️ 매일 할일 <span id="hw-daily-count" style="font-size:13px;color:var(--text-3);font-weight:400"></span></h2>
       <div class="hw-head-right">
         <span id="hw-daily-reset" style="font-size:11px;color:var(--text-3)"></span>
         <button class="btn-add" id="btn-hw-add-daily" style="font-size:12px;padding:6px 12px">+ 추가</button>
@@ -75,8 +75,8 @@
     <div id="hw-daily"></div>
 
     <!-- 주간 할일 -->
-    <div class="alarm-header hw-sec-head" data-sec="weekly" style="margin-top:8px">
-      <h2><span class="hw-sec-arrow">▶</span>📅 주간 할일 <span id="hw-weekly-count" style="font-size:13px;color:var(--text-3);font-weight:400"></span></h2>
+    <div class="alarm-header sec-head" data-sec="weekly" data-body="hw-weekly" style="margin-top:8px">
+      <h2><span class="sec-arrow">▶</span>📅 주간 할일 <span id="hw-weekly-count" style="font-size:13px;color:var(--text-3);font-weight:400"></span></h2>
       <div class="hw-head-right">
         <span id="hw-weekly-reset" style="font-size:11px;color:var(--text-3)"></span>
         <button class="btn-add" id="btn-hw-add-weekly" style="font-size:12px;padding:6px 12px">+ 추가</button>
@@ -90,8 +90,8 @@
   <!-- ═══ 탭: 작업 ═══ -->
   <div class="tab-panel" id="tab-work" style="display:none">
     <!-- 알람 목록 -->
-    <div class="alarm-header">
-      <h2>⏰ 에린 알람</h2>
+    <div class="alarm-header sec-head" data-sec="alarm" data-body="alarm-list">
+      <h2><span class="sec-arrow">▶</span>⏰ 에린 알람</h2>
       <button class="btn-add" id="btn-add">+ 추가</button>
     </div>
     <div id="alarm-list">
@@ -99,32 +99,36 @@
     </div>
 
     <!-- 작업 타이머 -->
-    <div class="alarm-header" style="margin-top:8px">
-      <h2>⚒️ 작업 타이머</h2>
+    <div class="alarm-header sec-head" data-sec="timer" data-body="task-timers" style="margin-top:8px">
+      <h2><span class="sec-arrow">▶</span>⚒️ 작업 타이머</h2>
     </div>
     <div id="task-timers"></div>
 
     <!-- 경매장 시세 -->
-    <div class="alarm-header" style="margin-top:8px">
-      <h2>💰 경매장 시세</h2>
+    <div class="alarm-header sec-head" data-sec="market" data-body="sec-market" style="margin-top:8px">
+      <h2><span class="sec-arrow">▶</span>💰 경매장 시세</h2>
       <div style="display:flex;gap:6px">
         <button class="btn-add" id="btn-market-search" style="font-size:12px;padding:6px 12px">+ 추가</button>
         <button class="btn-add" id="btn-refresh-market" style="font-size:12px;padding:6px 12px;background:var(--card-soft);color:var(--text-2);border:1px solid var(--line)">🔄</button>
       </div>
     </div>
-    <div id="market-list"></div>
-    <div id="market-updated" style="text-align:center;font-size:11px;color:var(--text-3);margin-top:4px;margin-bottom:8px"></div>
+    <div id="sec-market">
+      <div id="market-list"></div>
+      <div id="market-updated" style="text-align:center;font-size:11px;color:var(--text-3);margin-top:4px;margin-bottom:8px"></div>
+    </div>
 
     <!-- 외침 검색 -->
-    <div class="alarm-header" style="margin-top:8px">
-      <h2>📣 외침 검색</h2>
+    <div class="alarm-header sec-head" data-sec="horn" data-body="sec-horn" style="margin-top:8px">
+      <h2><span class="sec-arrow">▶</span>📣 외침 검색</h2>
       <button class="btn-add" id="btn-horn-refresh" style="font-size:12px;padding:6px 12px;background:var(--card-soft);color:var(--text-2);border:1px solid var(--line)">🔄</button>
     </div>
-    <div class="horn-bar">
-      <select id="horn-world"></select>
-      <input type="text" id="horn-q" placeholder="찾을 말 (비우면 전체)" />
+    <div id="sec-horn">
+      <div class="horn-bar">
+        <select id="horn-world"></select>
+        <input type="text" id="horn-q" placeholder="찾을 말 (비우면 전체)" />
+      </div>
+      <div id="horn-list"></div>
     </div>
-    <div id="horn-list"></div>
   </div>
 
   <!-- ═══ 탭: 교역 ═══ -->
