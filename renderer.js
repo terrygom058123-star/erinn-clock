@@ -157,8 +157,6 @@ const DEFAULT_HW = {
   daily: [
     { id: "d1", name: "블루밍" },
     { id: "d2", name: "베테랑/빛구/로드(크리스탈)" },
-    { id: "d3", name: "탐험대 보내기" },
-    { id: "d4", name: "리플레이" },
     { id: "d5", name: "탈농" },
     { id: "d6", name: "모험가의 인장", subs: SEAL_QUESTS } ],
   weekly: [
@@ -186,6 +184,13 @@ if (!hwList.weekly) hwList.weekly = [];
     }
   }
   localStorage.setItem("erinn-hw-list", JSON.stringify(hwList));
+}
+// 안 쓰는 기본 할일 정리 (한 번만 — 직접 다시 추가하면 그대로 둠)
+if (!localStorage.getItem("erinn-hw-clean1")) {
+  const drop = ["리플레이", "탐험대 보내기"];
+  hwList.daily = hwList.daily.filter(it => !drop.includes(it.name));
+  localStorage.setItem("erinn-hw-list", JSON.stringify(hwList));
+  localStorage.setItem("erinn-hw-clean1", "1");
 }
 // 펼침 상태는 앱을 껐다 켜도 유지
 let hwOpen = JSON.parse(localStorage.getItem("erinn-hw-open") || "{}");
