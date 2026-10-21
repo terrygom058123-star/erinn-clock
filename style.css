@@ -183,9 +183,10 @@ body {
 
 /* ── 미니 시계 버튼 ── */
 .btn-mini-clock {
-  width: 100%; background: var(--card); border: 1px solid var(--line); color: var(--text-2);
-  border-radius: var(--r); padding: 12px; font-size: 13px; font-weight: 700;
-  cursor: pointer; margin-bottom: 14px; box-shadow: var(--sh); transition: all .15s;
+  align-self: flex-start; margin: -4px 0 14px; background: var(--card);
+  border: 1px solid var(--line); color: var(--text-2);
+  border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 700;
+  cursor: pointer; box-shadow: var(--sh); transition: all .15s;
 }
 .btn-mini-clock:hover { border-color: #cdd5e5; }
 .btn-mini-clock.on { border-color: var(--primary); color: var(--primary); background: var(--primary-l); }
