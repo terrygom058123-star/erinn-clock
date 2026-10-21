@@ -1184,7 +1184,7 @@ function renderTrade() {
     <button class="${tradeView === "route" ? "on" : ""}" data-view="route">루트</button>
   </div>`;
 
-  if (tradeView !== "route") {
+  if (tradeView === "who") {
     html += `
     <div class="weeks-bar">
       <div class="wk-top">
@@ -1298,7 +1298,8 @@ function renderTrade() {
     const totalDone = groups.reduce((s, g) =>
       s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length, 0);
 
-    html += `<div class="all-summary">🚢 교역소 4곳 전체 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료</div>`;
+    html += `<div class="all-summary">🚢 교역소 4곳 전체 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료${
+      tradeWeeks > 1 ? `<div class="all-sub">${tradeWeeks}주치 기준 (주차는 담당별에서 바꿀 수 있어요)</div>` : ""}</div>`;
     html += groups.map(g => {
       const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length;
       const allDone = doneCnt === g.items.length;
