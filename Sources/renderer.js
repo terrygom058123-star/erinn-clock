@@ -189,6 +189,8 @@ if (!hwList.weekly) hwList.weekly = [];
 }
 // 펼침 상태는 앱을 껐다 켜도 유지
 let hwOpen = JSON.parse(localStorage.getItem("erinn-hw-open") || "{}");
+// 매일 / 주간 섹션 접기 (기본 펼침)
+let hwSecOpen = JSON.parse(localStorage.getItem("erinn-hw-sec") || '{"daily":true,"weekly":true}');
 function saveHwList() { localStorage.setItem("erinn-hw-list", JSON.stringify(hwList)); }
 function newHwId() { return "h" + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
 
@@ -340,6 +342,20 @@ function renderHomework() {
       openHwModal(btn.dataset.kind, btn.dataset.id);
     });
   }));
+
+  // 섹션 접기/펼치기
+  document.querySelectorAll(".hw-sec-head").forEach(head => {
+    const sec  = head.dataset.sec;
+    const open = hwSecOpen[sec] !== false;
+    head.classList.toggle("open", open);
+    (sec === "daily" ? dailyEl : weeklyEl).style.display = open ? "" : "none";
+    head.onclick = e => {
+      if (e.target.closest("button")) return;      // + 추가 버튼은 그대로
+      hwSecOpen[sec] = !open;
+      localStorage.setItem("erinn-hw-sec", JSON.stringify(hwSecOpen));
+      renderHomework();
+    };
+  });
 
   // 진행 카운트
   const dDone = hwList.daily.filter(hwItemDone).length;
@@ -2149,7 +2165,10 @@ function triggerTaskAlarm(task) {
 }
 
 // 시계 카드를 누르면 알람 끄기 (발동 중일 때만)
-clockCard.addEventListener("click", () => { if (activeAlert) dismissAlert(); });
+clockCard.addEventListener("click", e => {
+  if (e.target.closest("#btn-mini-clock")) return;   // 미니 시계 버튼은 제외
+  if (activeAlert) dismissAlert();
+});
 // 기존 오버레이(있으면)도 닫기 호환
 if (alertOverlay) alertOverlay.addEventListener("click", dismissAlert);
 const alertDismissBtn = document.getElementById("alert-dismiss");

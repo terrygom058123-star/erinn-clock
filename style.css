@@ -182,14 +182,16 @@ body {
 .btn-del:hover { color: var(--red); }
 
 /* ── 미니 시계 버튼 ── */
+/* 시계 바 안 오른쪽에 붙는 작은 버튼 — 색 배경 위라 반투명 흰색 */
 .btn-mini-clock {
-  align-self: flex-start; margin: -4px 0 14px; background: var(--card);
-  border: 1px solid var(--line); color: var(--text-2);
-  border-radius: 999px; padding: 6px 13px; font-size: 12px; font-weight: 700;
-  cursor: pointer; box-shadow: var(--sh); transition: all .15s;
+  margin-left: auto; flex-shrink: 0;
+  background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3); color: #fff;
+  border-radius: 999px; padding: 5px 11px; font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
 }
-.btn-mini-clock:hover { border-color: #cdd5e5; }
-.btn-mini-clock.on { border-color: var(--primary); color: var(--primary); background: var(--primary-l); }
+.btn-mini-clock:hover  { background: rgba(255,255,255,.28); }
+.btn-mini-clock:active { transform: scale(.95); }
+.btn-mini-clock.on { background: #fff; border-color: #fff; color: var(--text); }
 
 /* ── 매일/주간 할일 ── */
 .hw-head-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -683,3 +685,8 @@ body {
 .hw-sub { align-items: flex-start; }
 .hw-sub .hw-name { line-height: 1.45; word-break: keep-all; }
 .hw-sub .hw-check { margin-top: 1px; }
+
+/* 매일 / 주간 할일 접기 */
+.hw-sec-head { cursor: pointer; user-select: none; }
+.hw-sec-arrow { display: inline-block; font-size: 10px; color: var(--text-3); margin-right: 5px; transition: transform .2s; }
+.hw-sec-head.open .hw-sec-arrow { transform: rotate(90deg); }
