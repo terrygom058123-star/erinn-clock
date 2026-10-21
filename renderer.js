@@ -1682,7 +1682,7 @@ async function toggleWebPiP() {
   // 이미 열려 있으면 닫기
   if (pipWindow) { pipWindow.close(); return; }
 
-  const openH = 104 + currentRunningTasks().length * 32 + remainingDailyTodos().length * 24;
+  const openH = 104 + currentRunningTasks().length * 32 + remainingDailyTodos().length * 31;
   const pip = await documentPictureInPicture.requestWindow({
     width: 230, height: Math.min(420, Math.max(130, openH)),
   });
@@ -1710,16 +1710,17 @@ async function toggleWebPiP() {
     /* 매일 할일 */
     .todos { display:flex; flex-direction:column; gap:3px; width:100%; padding:0 12px 2px;
       overflow-y:auto; }
-    .drow { display:flex; align-items:center; gap:6px; cursor:pointer;
-      background:rgba(255,255,255,0.08); border-radius:7px; padding:4px 8px; font-size:12px; }
+    .drow { display:flex; align-items:center; gap:7px; cursor:pointer;
+      background:rgba(255,255,255,0.08); border-radius:7px; padding:5px 9px;
+      font-size:14px; line-height:1.3; }
     .drow:hover { background:rgba(255,255,255,0.16); }
-    .dbox { width:13px; height:13px; border:1.5px solid rgba(255,255,255,0.55);
+    .dbox { width:15px; height:15px; border:1.5px solid rgba(255,255,255,0.6);
       border-radius:4px; flex-shrink:0; }
     .dn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .dmore { font-size:10px; color:rgba(255,255,255,0.6); text-align:center; padding-top:2px; }
+    .dmore { font-size:11px; color:rgba(255,255,255,0.65); text-align:center; padding-top:3px; }
     .drow.seal { background:rgba(255,255,255,0.16); font-weight:600; }
-    .darrow { width:13px; text-align:center; flex-shrink:0; font-size:11px; opacity:.8; }
-    .drow.sub2 { margin-left:12px; background:rgba(255,255,255,0.05); font-size:11px; }
+    .darrow { width:15px; text-align:center; flex-shrink:0; font-size:13px; opacity:.8; }
+    .drow.sub2 { margin-left:12px; background:rgba(255,255,255,0.05); }
     /* 알람 오버레이 */
     .alarm { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
       gap:6px; padding:8px; text-align:center; animation:flash 0.6s infinite; }
@@ -1811,7 +1812,8 @@ function updatePiP() {
   });
 
   const used = 104 + running.length * 32;                  // 시계 + 작업 타이머가 쓰는 높이
-  const room = Math.floor(((pipWindow.innerHeight || 150) - used) / 24);
+  const PIP_ROW = 31;                                      // 할일 한 줄 높이 (.drow + gap)
+  const room = Math.floor(((pipWindow.innerHeight || 150) - used) / PIP_ROW);
   const shown  = flat.slice(0, Math.max(0, room));
   const hidden = flat.length - shown.length;
   pipEls.todosEl.innerHTML = shown.map(r => {
