@@ -1676,7 +1676,10 @@ async function toggleWebPiP() {
   // 이미 열려 있으면 닫기
   if (pipWindow) { pipWindow.close(); return; }
 
-  const pip = await documentPictureInPicture.requestWindow({ width: 200, height: 110 });
+  const openH = 104 + currentRunningTasks().length * 32 + remainingDailyTodos().length * 24;
+  const pip = await documentPictureInPicture.requestWindow({
+    width: 230, height: Math.min(420, Math.max(130, openH)),
+  });
   pipWindow = pip;
 
   const style = pip.document.createElement("style");
@@ -1699,13 +1702,15 @@ async function toggleWebPiP() {
       padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer; }
     .trestart:active { background:#15803d; }
     /* 매일 할일 */
-    .todos { display:flex; flex-direction:column; gap:3px; width:100%; padding:0 12px 2px; }
+    .todos { display:flex; flex-direction:column; gap:3px; width:100%; padding:0 12px 2px;
+      overflow-y:auto; }
     .drow { display:flex; align-items:center; gap:6px; cursor:pointer;
       background:rgba(255,255,255,0.08); border-radius:7px; padding:4px 8px; font-size:12px; }
     .drow:hover { background:rgba(255,255,255,0.16); }
     .dbox { width:13px; height:13px; border:1.5px solid rgba(255,255,255,0.55);
       border-radius:4px; flex-shrink:0; }
     .dn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .dmore { font-size:10px; color:rgba(255,255,255,0.6); text-align:center; padding-top:2px; }
     .drow.info { cursor:default; opacity:.85; }
     .drow.info:hover { background:rgba(255,255,255,0.08); }
     .dbox.sub { border-style:dashed; }
@@ -1786,13 +1791,18 @@ function updatePiP() {
     btn.addEventListener("click", () => startTaskById(btn.dataset.id));
   });
 
-  // 남은 매일 할일 — 눌러서 바로 체크
-  const todos = remainingDailyTodos();
+  // 남은 매일 할일 — 창을 키운 만큼 더 보여주고, 눌러서 바로 체크
+  const all = remainingDailyTodos();
+  const used = 104 + running.length * 32;                  // 시계 + 작업 타이머가 쓰는 높이
+  const room = Math.floor(((pipWindow.innerHeight || 150) - used) / 24);
+  const todos = all.slice(0, Math.max(0, room));
+  const hidden = all.length - todos.length;
   pipEls.todosEl.innerHTML = todos.map(t => t.sub
     // 인장처럼 하위 퀘스트가 있는 건 한 번에 다 끝낼 수 없으니 진행만 보여줌
     ? `<div class="drow info"><span class="dbox sub"></span><span class="dn">${t.name}</span></div>`
     : `<div class="drow" data-id="${t.id}"><span class="dbox"></span><span class="dn">${t.name}</span></div>`
-  ).join("");
+  ).join("") + (hidden > 0
+    ? `<div class="dmore">⌄ 창을 키우면 ${hidden}개 더 보여요</div>` : "");
   pipEls.todosEl.querySelectorAll(".drow[data-id]").forEach(el => {
     el.addEventListener("click", () => {
       homework.daily[el.dataset.id] = true;
@@ -1800,13 +1810,6 @@ function updatePiP() {
     });
   });
 
-  // 창 높이 자동 조절 (시계 + 작업 + 할일 수)
-  try {
-    const h = 110 + running.length * 32 + todos.length * 24;
-    if (pipWindow.innerHeight && Math.abs(pipWindow.innerHeight - h) > 8) {
-      pipWindow.resizeTo(pipWindow.outerWidth || 220, h);
-    }
-  } catch(e) {}
 }
 
 function showPiPAlarm(alarm) {
@@ -1941,7 +1944,7 @@ function remainingDailyTodos() {
     id: it.id,
     name: it.subs ? `${it.name} ${hwSubCount(it)}/${it.subs.length}` : it.name,
     sub: !!it.subs,          // 하위 퀘스트가 있는 건 미니 창에서 체크하지 않음
-  })).slice(0, 5);
+  }));
 }
 
 function syncToNative() {
