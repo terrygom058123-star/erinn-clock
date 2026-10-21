@@ -1580,6 +1580,52 @@ function renderTrade() {
   });
 }
 
+// ─── 교역 재료 PiP (물교 가기 전 1인분 수량 확인용) ───────────
+// 브라우저는 PiP 창을 한 번에 하나만 띄울 수 있어 시계 창과 번갈아 쓴다
+async function toggleTradePiP() {
+  if (pipMode === "trade" && pipWindow) { pipWindow.close(); return; }
+  if (!("documentPictureInPicture" in window)) {
+    alert("이 브라우저는 작은 창 띄우기를 지원하지 않아요. PC 크롬·엣지에서 써주세요.");
+    return;
+  }
+  const groups = groupBySkill(TRADE_POSTS);
+  const rowCount = groups.reduce((n, g) => n + g.items.length + 1, 0);
+  try {
+    const pip = await documentPictureInPicture.requestWindow({
+      width: 260, height: Math.min(560, 60 + rowCount * 24),
+    });
+    pipWindow = pip; pipMode = "trade"; pipEls = null;
+    setMiniBtn(false);                       // 시계 창은 닫힌 셈
+
+    const st = pip.document.createElement("style");
+    st.textContent = `
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { background:#0b1120; color:#fff; font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+        user-select:none; padding:8px 10px; }
+      h1 { font-size:12px; font-weight:700; color:#94a3b8; padding:0 2px 6px; }
+      .sk { font-size:11px; font-weight:700; opacity:.7; padding:6px 2px 3px; }
+      .it { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.07);
+        border-radius:7px; padding:5px 9px; margin-bottom:3px; font-size:14px; line-height:1.3; }
+      .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .q { margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums; padding-left:8px; }
+    `;
+    pip.document.head.appendChild(st);
+
+    const wrap = pip.document.createElement("div");
+    wrap.innerHTML = `<h1>🚢 교역 재료 · 1인분</h1>` + groups.map(g =>
+      `<div class="sk">${SKILL_ICON[g.skill] || "🔧"} ${g.skill}</div>` +
+      g.items.map(({ m }) =>
+        `<div class="it"><span class="nm">${m.n}</span><span class="q">${m.q.toLocaleString()}</span></div>`
+      ).join("")).join("");
+    pip.document.body.appendChild(wrap);
+
+    pip.addEventListener("pagehide", () => { pipWindow = null; pipMode = null; });
+  } catch (e) {
+    alert("작은 창을 열 수 없습니다. 한 번 더 눌러보세요.");
+  }
+}
+document.getElementById("btn-trade-pip")?.addEventListener("click", toggleTradePiP);
+
 document.getElementById("btn-trade-reset")?.addEventListener("click", () => {
   // 전체 통합 보기에서는 4곳 모두, 아니면 현재 교역소만 초기화
   const targets = TRADE_POSTS;
@@ -1714,9 +1760,9 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 const miniBtn = document.getElementById("btn-mini-clock");
 let miniClockOn = false;
 let pipWindow = null;
+let pipMode   = null;   // "clock" | "trade" — PiP 창은 한 번에 하나만 열린다
 let pipEls = null;
-let pipSealOpen  = false;  // 미니 창에서 인장 퀘스트를 펼쳤는지
-let pipTradeOpen = false;  // 미니 창에서 교역 재료(1인분)를 펼쳤는지  // { period, time, icon }
+let pipSealOpen = false;   // 미니 창에서 인장 퀘스트를 펼쳤는지
 
 function setMiniBtn(on) {
   miniClockOn = on;
@@ -1733,7 +1779,7 @@ async function toggleWebPiP() {
   const pip = await documentPictureInPicture.requestWindow({
     width: 230, height: Math.min(420, Math.max(130, openH)),
   });
-  pipWindow = pip;
+  pipWindow = pip; pipMode = "clock";
 
   const style = pip.document.createElement("style");
   style.textContent = `
@@ -1812,7 +1858,7 @@ async function toggleWebPiP() {
   updatePiP();
   if (activeAlert) showPiPAlarm(activeAlert);  // 이미 울리는 중이면 표시
 
-  pip.addEventListener("pagehide", () => { pipWindow = null; pipEls = null; setMiniBtn(false); });
+  pip.addEventListener("pagehide", () => { pipWindow = null; pipEls = null; pipMode = null; setMiniBtn(false); });
   setMiniBtn(true);
 }
 
@@ -1822,7 +1868,7 @@ function fmtMMSS(sec) {
 }
 
 function updatePiP() {
-  if (!pipWindow || !pipEls) return;
+  if (pipMode !== "clock" || !pipWindow || !pipEls) return;
   const et = getErinnTime(offsetSec);
   const { period, display } = formatErrin(et.hours, et.minutes);
   const theme = getTheme(et.hours, et.minutes);
@@ -1862,15 +1908,6 @@ function updatePiP() {
     });
   });
 
-  // 교역 재료 1인분 — 물교 가기 전 인벤토리 확인용 (전체 통합과 같은 스킬별 묶음)
-  flat.push({ kind: "trade" });
-  if (pipTradeOpen) {
-    groupBySkill(TRADE_POSTS).forEach(g => {
-      flat.push({ kind: "tskill", name: `${SKILL_ICON[g.skill] || "🔧"} ${g.skill}` });
-      g.items.forEach(({ m }) => flat.push({ kind: "titem", name: m.n, q: m.q }));
-    });
-  }
-
   const used = 104 + running.length * 32;                  // 시계 + 작업 타이머가 쓰는 높이
   const PIP_ROW = 31;                                      // 할일 한 줄 높이 (.drow + gap)
   const room = Math.floor(((pipWindow.innerHeight || 150) - used) / PIP_ROW);
@@ -1881,11 +1918,6 @@ function updatePiP() {
         <span class="darrow">${pipSealOpen ? "⌄" : "›"}</span><span class="dn">${r.name}</span></div>`;
     if (r.kind === "sub")  return `<div class="drow sub2" data-sub="${r.id}" data-i="${r.i}">
         <span class="dbox"></span><span class="dn">${r.name}</span></div>`;
-    if (r.kind === "trade")  return `<div class="drow seal" data-trade="1">
-        <span class="darrow">${pipTradeOpen ? "⌄" : "›"}</span><span class="dn">🚢 교역 재료 (1인분)</span></div>`;
-    if (r.kind === "tskill") return `<div class="drow tskill">${r.name}</div>`;
-    if (r.kind === "titem")  return `<div class="drow titem">
-        <span class="dn">${r.name}</span><span class="dq">${r.q.toLocaleString()}</span></div>`;
     return `<div class="drow" data-id="${r.id}"><span class="dbox"></span><span class="dn">${r.name}</span></div>`;
   }).join("") + (hidden > 0
     ? `<div class="dmore">⌄ 창을 키우면 ${hidden}개 더 보여요</div>` : "");
@@ -1901,9 +1933,6 @@ function updatePiP() {
   });
   pipEls.todosEl.querySelectorAll(".drow[data-seal]").forEach(el => {
     el.addEventListener("click", () => { pipSealOpen = !pipSealOpen; updatePiP(); });
-  });
-  pipEls.todosEl.querySelectorAll(".drow[data-trade]").forEach(el => {
-    el.addEventListener("click", () => { pipTradeOpen = !pipTradeOpen; updatePiP(); });
   });
 
 }
