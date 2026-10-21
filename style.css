@@ -690,3 +690,7 @@ body {
 .sec-head { cursor: pointer; user-select: none; }
 .sec-arrow { display: inline-block; font-size: 10px; color: var(--text-3); margin-right: 5px; transition: transform .2s; }
 .sec-head.open .sec-arrow { transform: rotate(90deg); }
+
+/* 할일 머리줄이 좁을 때 제목이 줄바꿈되지 않도록 */
+.alarm-header h2 { white-space: nowrap; }
+.hw-head-right { flex-shrink: 0; }

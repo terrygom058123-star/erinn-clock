@@ -396,6 +396,18 @@ document.getElementById("hw-modal")?.addEventListener("click", e => {
   if (e.target === e.currentTarget) closeHwModal();
 });
 
+// 매일 할일 전부 다시 시작 (친구가 먼저 끝냈을 때 등 수동 초기화)
+document.getElementById("btn-hw-clear-daily")?.addEventListener("click", e => {
+  e.stopPropagation();
+  if (!confirm("오늘 매일 할일 체크를 모두 지우고 다시 시작할까요?")) return;
+  syncHomeworkPeriod();
+  homework.daily = {};          // 인장 하위 퀘스트 체크까지 같이 비워짐
+  saveHomework();
+  renderHomework();
+  if (typeof updatePiP === "function") updatePiP();
+  toast("↺ 매일 할일을 다시 시작합니다");
+});
+
 document.getElementById("btn-hw-save")?.addEventListener("click", () => {
   if (!hwEditing) return;
   const name = document.getElementById("hw-name-input").value.trim();
