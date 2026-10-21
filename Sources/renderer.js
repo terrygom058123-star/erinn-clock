@@ -559,11 +559,6 @@ const TRADE_POSTS = [
 // 저장 단위: 몇 '명분'을 완성했는지 (0 ~ 담당 인원수 × 준비 주차)
 let tradeState = JSON.parse(localStorage.getItem("erinn-trade-party") || "{}");
 
-// 출발 전 점검 체크 (교역 한 번 기준, 매주 초기화)
-let checkState = JSON.parse(localStorage.getItem("erinn-trade-check") || "{}");
-function saveCheck() { localStorage.setItem("erinn-trade-check", JSON.stringify(checkState)); }
-function checkKey(postId, tier, matName) { return `${postId}|${tier}|${matName}`; }
-
 // 한 번에 몇 주치를 준비할지 (1주 = 이번 주 한 번 교역할 분량)
 const WEEK_CHOICES = [1, 2, 4, 8, 16];
 let tradeWeeks = parseInt(localStorage.getItem("erinn-trade-weeks") || "1", 10);
@@ -659,10 +654,6 @@ function syncTradeWeek() {
     if (tradeWeeks > 1) tradeState.__week = weekKey;
     else tradeState = { __week: weekKey };     // 1주 모드는 지난주 진행 비우기
     localStorage.setItem("erinn-trade-party", JSON.stringify(tradeState));
-  }
-  if (checkState.__week !== weekKey) {
-    checkState = { __week: weekKey };          // 교역을 다녀왔으니 점검표도 새로
-    saveCheck();
   }
   if (routeState.__week !== weekKey) {
     routeState = { __week: weekKey };
@@ -1189,11 +1180,11 @@ function renderTrade() {
   let html = `
   <div class="view-toggle">
     <button class="${tradeView === "who" ? "on" : ""}" data-view="who">담당별</button>
-    <button class="${tradeView === "all" ? "on" : ""}" data-view="all">출발 점검</button>
+    <button class="${tradeView === "all" ? "on" : ""}" data-view="all">전체 통합</button>
     <button class="${tradeView === "route" ? "on" : ""}" data-view="route">루트</button>
   </div>`;
 
-  if (tradeView === "who") {
+  if (tradeView !== "route") {
     html += `
     <div class="weeks-bar">
       <div class="wk-top">
@@ -1301,32 +1292,38 @@ function renderTrade() {
       </div>`;
     }).join("");
   } else {
-    // ── 출발 점검: 교역 가기 전에 재료가 인벤토리에 있는지 한 줄씩 확인 ──
-    // 수량은 '이번 교역 한 번' 기준 (준비 주차와 무관)
-    let total = 0, done = 0;
-    const rows = TRADE_POSTS.flatMap(post =>
-      post.tiers.flatMap(ti => ti.mats.map(m => {
-        const key = checkKey(post.id, ti.t, m.n);
-        const ok  = !!checkState[key];
-        total++; if (ok) done++;
-        const per = partyMaxOf(m.n);              // 각자=1, 담당=인원수
-        return `
-        <div class="ck-row ${ok ? "done" : ""}" data-key="${key}">
-          <div class="hw-check">${ok ? "✓" : ""}</div>
-          <div class="ck-name">${m.n}
-            <span class="ck-from">${post.icon} ${post.name} · ${ti.t}티어</span>
-          </div>
-          <div class="ck-qty">${per === 1
-            ? `<span class="ck-one">각자 준비</span><b>1인 ${m.q.toLocaleString()}개</b>`
-            : `<span class="ck-one">1인 ${m.q.toLocaleString()}개</span><b>${PARTY_SIZE}인 ${(m.q * per).toLocaleString()}개</b>`}
-          </div>
-        </div>`;
-      }))).join("");
+    // ── 전체 통합: 교역소 구분 없이 스킬별로 모두 모아 보기 ──
+    const groups = groupBySkill(TRADE_POSTS);
+    const totalMats = groups.reduce((s, g) => s + g.items.length, 0);
+    const totalDone = groups.reduce((s, g) =>
+      s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length, 0);
 
-    html += `<div class="all-summary">🎒 출발 전 점검 · 재료 ${total}종 중 <b>${done}종</b> 확인
-      <div class="all-sub">교역 한 번 분량 (${PARTY_SIZE}인 기준) · 월요일에 자동으로 비워집니다</div></div>`;
-    html += `<button class="ck-reset" id="btn-check-reset">점검표 비우기</button>`;
-    html += `<div class="ck-list">${rows}</div>`;
+    html += `<div class="all-summary">🚢 교역소 4곳 전체 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료</div>`;
+    html += groups.map(g => {
+      const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length;
+      const allDone = doneCnt === g.items.length;
+      const open = !!tradeOpen[`all|skill|${g.skill}`];   // 기본 닫힘
+      const oKey = `skill|${g.skill}`;
+      const ordered = applyOrder(oKey, g.items);
+      matOrder[oKey] = ordered.map(({ m }) => m.n);
+      const rows = ordered
+        .map(({ post: p, ti, m }) => matRowHtml(p, ti, m, `${p.icon} ${p.name} · ${ti.t}티어`, oKey))
+        .join("");
+      return `
+      <div class="tier-card ${allDone ? "done" : ""} ${open ? "open" : ""}" data-skill="${g.skill}" data-all="1">
+        <div class="tier-head">
+          <div>
+            <div class="tier-title"><span class="t-badge">${SKILL_ICON[g.skill] || "🔧"}</span>${g.skill}</div>
+            <div class="tier-sub">재료 ${g.items.length}종</div>
+          </div>
+          <div class="tier-right">
+            <span class="tier-prog">${doneCnt}/${g.items.length}</span>
+            <span class="tier-arrow">▶</span>
+          </div>
+        </div>
+        <div class="tier-body">${rows}</div>
+      </div>`;
+    }).join("");
   }
   tiersEl.innerHTML = html;
 
@@ -1337,24 +1334,6 @@ function renderTrade() {
       renderTrade();
     });
   });
-
-  if (tradeView === "all") {
-    tiersEl.querySelectorAll(".ck-row").forEach(el => {
-      el.addEventListener("click", e => {
-        e.stopPropagation();
-        const k = el.dataset.key;
-        checkState[k] = !checkState[k];
-        saveCheck();
-        const y = window.scrollY; renderTrade(); window.scrollTo(0, y);
-      });
-    });
-    document.getElementById("btn-check-reset")?.addEventListener("click", () => {
-      if (!confirm("점검 체크를 모두 지울까요?")) return;
-      checkState = { __week: hwPeriodKeys().weekKey };
-      saveCheck(); renderTrade();
-    });
-    return;   // 점검 보기는 원재료 총합 카드 없음
-  }
 
   // ─ 원재료 총합 카드 (생활스킬 영역별) ─
   const isWho = tradeView !== "all";
