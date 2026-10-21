@@ -134,8 +134,8 @@ renderTasks();
 const SEAL_QUESTS = [
   "모나트", "히커의 엄마", "마독", "마놀린", "로드미션 1릴",
   "던바튼 정찰", "음식 먹기", "랄프", "퍄다루루 - 꼬물이", "생태학자",
-  "여자 자이언트 굴착 전문가", "정보대원 - 고스트 처치",
-  "알렉시나 - 유물 10개 발견", "램버트 박사 - 자동 길찾기 이용", "베테랑" ];
+  "여자 자이언트 굴착 전문가", "정보대원", "알렉시나", "램버트 박사", "바이스",
+  "헥터", "고든", "맥켈리", "히코", "라프" ];
 
 const DEFAULT_HW = {
   daily: [
@@ -155,9 +155,20 @@ let hwList = JSON.parse(localStorage.getItem("erinn-hw-list") || "null")
           || JSON.parse(JSON.stringify(DEFAULT_HW));
 if (!hwList.daily)  hwList.daily = [];
 if (!hwList.weekly) hwList.weekly = [];
-// 이미 할일을 저장해 둔 사용자에게도 인장이 보이도록 한 번만 추가
-if (!hwList.daily.some(it => it.subs)) {
-  hwList.daily.push({ id: "d6", name: "모험가의 인장", subs: SEAL_QUESTS });
+// 저장해 둔 할일에도 인장을 넣고, 퀘스트 목록이 바뀌었으면 최신으로 교체
+{
+  const seal = hwList.daily.find(it => it.subs);
+  if (!seal) {
+    hwList.daily.push({ id: "d6", name: "모험가의 인장", subs: SEAL_QUESTS });
+  } else if (JSON.stringify(seal.subs) !== JSON.stringify(SEAL_QUESTS)) {
+    seal.subs = SEAL_QUESTS;
+    // 순서가 바뀌면 체크가 엉뚱한 퀘스트에 붙으므로 인장 체크만 비움
+    const hw = JSON.parse(localStorage.getItem("erinn-homework") || "{}");
+    if (hw.daily) {
+      Object.keys(hw.daily).forEach(k => { if (k.startsWith(seal.id + "|")) delete hw.daily[k]; });
+      localStorage.setItem("erinn-homework", JSON.stringify(hw));
+    }
+  }
   localStorage.setItem("erinn-hw-list", JSON.stringify(hwList));
 }
 // 펼침 상태는 앱을 껐다 켜도 유지
