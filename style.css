@@ -636,3 +636,26 @@ body {
   box-shadow: 0 6px 24px rgba(24,39,75,.28);
 }
 .app-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* 외침 검색 */
+.horn-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+.horn-bar select {
+  flex: 0 0 92px; background: var(--card); color: var(--text);
+  border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 8px; font-size: 13px;
+}
+.horn-bar input {
+  flex: 1; min-width: 0; background: var(--card); color: var(--text);
+  border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; outline: none;
+}
+.horn-bar input:focus { border-color: var(--primary); }
+.horn-count { font-size: 11px; color: var(--text-3); margin-bottom: 8px; }
+.horn-count b { color: var(--primary); }
+.horn-row {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 10px 12px; margin-bottom: 6px; box-shadow: var(--sh);
+}
+.horn-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+.horn-who { font-size: 12px; font-weight: 700; color: var(--primary); }
+.horn-when { font-size: 11px; color: var(--text-3); }
+.horn-msg { font-size: 13px; color: var(--text); line-height: 1.5; word-break: break-all; }
+.horn-empty { text-align: center; color: var(--text-3); font-size: 13px; padding: 22px 10px; }

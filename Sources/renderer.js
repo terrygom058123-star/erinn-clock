@@ -1467,6 +1467,87 @@ document.getElementById("btn-trade-reset")?.addEventListener("click", () => {
 renderTrade();
 
 // ─── 탭 전환 ──────────────────────────────────────────────
+// ─── 외침(거대한 외침의 뿔피리) 검색 ──────────────────────
+// API는 최근 1시간치를 한 번에 주므로, 받아두고 검색은 화면에서 거른다
+const HORN_WORLDS = ["류트", "만돌린", "하프", "울프"];
+let hornWorld = localStorage.getItem("erinn-horn-world") || HORN_WORLDS[0];
+let hornRaw = [];          // 마지막으로 받아온 1시간치
+let hornAt = 0;            // 받아온 시각
+let hornLoading = false;
+
+function hornAgo(iso) {
+  const min = Math.floor((Date.now() - new Date(iso)) / 60000);
+  return min < 1 ? "방금" : `${min}분 전`;
+}
+
+async function loadHorn() {
+  if (hornLoading) return;
+  hornLoading = true;
+  renderHorn("loading");
+  try {
+    const res = await fetchWithTimeout(
+      `https://open.api.nexon.com/mabinogi/v1/horn-bugle-world/history?server_name=${encodeURIComponent(hornWorld)}`,
+      { headers: { "x-nxopen-api-key": API_KEY } }
+    );
+    if (res.status === 429) { renderHorn("ratelimit"); return; }
+    if (!res.ok)            { renderHorn("error"); return; }
+    hornRaw = (await res.json()).horn_bugle_world_history || [];
+    hornAt = Date.now();
+    renderHorn();
+  } catch (e) {
+    renderHorn("error");
+  } finally {
+    hornLoading = false;
+  }
+}
+
+function renderHorn(state) {
+  const el = document.getElementById("horn-list");
+  if (!el) return;
+  const note = m => `<div class="horn-empty">${m}</div>`;
+  if (state === "loading")   return void (el.innerHTML = note("⏳ 불러오는 중..."));
+  if (state === "ratelimit") return void (el.innerHTML = note("API 호출이 많아요. 잠시 후 🔄 다시 눌러주세요."));
+  if (state === "error")     return void (el.innerHTML = note("불러오지 못했어요. 🔄 다시 눌러주세요."));
+
+  const q = (document.getElementById("horn-q")?.value || "").trim().toLowerCase();
+  const hit = q
+    ? hornRaw.filter(h => (h.message + h.character_name).toLowerCase().includes(q))
+    : hornRaw;
+
+  if (!hornRaw.length) return void (el.innerHTML = note("🔄 를 눌러 최근 1시간 외침을 불러오세요."));
+  if (!hit.length)     return void (el.innerHTML = note(`'${q}' 를 외친 사람이 없어요.`));
+
+  el.innerHTML =
+    `<div class="horn-count">${hornWorld} · 최근 1시간 ${hornRaw.length}건 중 <b>${hit.length}건</b></div>` +
+    hit.map(h => `
+      <div class="horn-row">
+        <div class="horn-top"><span class="horn-who">${esc(h.character_name)}</span>
+          <span class="horn-when">${hornAgo(h.date_send)}</span></div>
+        <div class="horn-msg">${esc(h.message)}</div>
+      </div>`).join("");
+}
+
+// 외침 내용은 다른 사람이 쓴 글이라 그대로 넣지 않고 escape
+function esc(t) {
+  return String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+{
+  const sel = document.getElementById("horn-world");
+  if (sel) {
+    sel.innerHTML = HORN_WORLDS.map(w => `<option ${w === hornWorld ? "selected" : ""}>${w}</option>`).join("");
+    sel.addEventListener("change", () => {
+      hornWorld = sel.value;
+      localStorage.setItem("erinn-horn-world", hornWorld);
+      hornRaw = [];
+      loadHorn();
+    });
+  }
+  document.getElementById("btn-horn-refresh")?.addEventListener("click", loadHorn);
+  document.getElementById("horn-q")?.addEventListener("input", () => renderHorn());
+  renderHorn();
+}
+
 function showTab(name) {
   document.querySelectorAll(".tab-panel").forEach(p => {
     p.style.display = (p.id === "tab-" + name) ? "flex" : "none";
@@ -1475,6 +1556,7 @@ function showTab(name) {
     b.classList.toggle("active", b.dataset.tab === name);
   });
   document.getElementById("app").scrollTop = 0;
+  if (name === "work" && !hornRaw.length && !hornLoading) loadHorn();
 }
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.addEventListener("click", () => showTab(btn.dataset.tab));
