@@ -1582,17 +1582,64 @@ function renderTrade() {
 
 // ─── 교역 재료 PiP (물교 가기 전 1인분 수량 확인용) ───────────
 // 브라우저는 PiP 창을 한 번에 하나만 띄울 수 있어 시계 창과 번갈아 쓴다
+// 챙긴 재료는 체크해서 목록에서 지운다 (교역은 주간 단위라 월요일에 비워짐)
+let tradeCheck = JSON.parse(localStorage.getItem("erinn-trade-check") || "{}");
+function syncTradeCheck() {
+  const { weekKey } = hwPeriodKeys();
+  if (tradeCheck.__week !== weekKey) {
+    tradeCheck = { __week: weekKey };
+    localStorage.setItem("erinn-trade-check", JSON.stringify(tradeCheck));
+  }
+}
+function saveTradeCheck() { localStorage.setItem("erinn-trade-check", JSON.stringify(tradeCheck)); }
+
+function tradePiPHtml() {
+  syncTradeCheck();
+  const groups = groupBySkill(TRADE_POSTS)
+    .map(g => ({ ...g, items: g.items.filter(({ m }) => !tradeCheck[m.n]) }))
+    .filter(g => g.items.length);
+  const left = groups.reduce((n, g) => n + g.items.length, 0);
+  const head = `<h1>🚢 교역 재료 · 1인분 <b>${left}종 남음</b>
+    <button id="tp-reset" title="체크 모두 지우기">↺</button></h1>`;
+  if (!left) return head + `<div class="allok">✅ 전부 챙겼어요</div>`;
+  return head + groups.map(g =>
+    `<div class="sk">${SKILL_ICON[g.skill] || "🔧"} ${g.skill}</div>` +
+    g.items.map(({ m }) =>
+      `<div class="it" data-mat="${m.n}"><span class="bx"></span><span class="nm">${m.n}</span><span class="q">${m.q.toLocaleString()}</span></div>`
+    ).join("")).join("");
+}
+
+function paintTradePiP() {
+  if (pipMode !== "trade" || !pipWindow) return;
+  const root = pipWindow.document.getElementById("tp-root");
+  if (!root) return;
+  root.innerHTML = tradePiPHtml();
+  root.querySelectorAll(".it").forEach(el => {
+    el.addEventListener("click", () => {
+      tradeCheck[el.dataset.mat] = true;
+      saveTradeCheck();
+      paintTradePiP();                        // 체크한 줄이 사라지고 나머지가 올라온다
+    });
+  });
+  root.querySelector("#tp-reset")?.addEventListener("click", () => {
+    tradeCheck = { __week: hwPeriodKeys().weekKey };
+    saveTradeCheck(); paintTradePiP();
+  });
+}
+
 async function toggleTradePiP() {
   if (pipMode === "trade" && pipWindow) { pipWindow.close(); return; }
   if (!("documentPictureInPicture" in window)) {
     alert("이 브라우저는 작은 창 띄우기를 지원하지 않아요. PC 크롬·엣지에서 써주세요.");
     return;
   }
-  const groups = groupBySkill(TRADE_POSTS);
-  const rowCount = groups.reduce((n, g) => n + g.items.length + 1, 0);
+  syncTradeCheck();
+  const rows = groupBySkill(TRADE_POSTS)
+    .map(g => g.items.filter(({ m }) => !tradeCheck[m.n]))
+    .filter(a => a.length).reduce((n, a) => n + a.length + 1, 0);
   try {
     const pip = await documentPictureInPicture.requestWindow({
-      width: 260, height: Math.min(560, 60 + rowCount * 24),
+      width: 270, height: Math.min(560, 70 + rows * 26),
     });
     pipWindow = pip; pipMode = "trade"; pipEls = null;
     setMiniBtn(false);                       // 시계 창은 닫힌 셈
@@ -1602,22 +1649,28 @@ async function toggleTradePiP() {
       * { margin:0; padding:0; box-sizing:border-box; }
       body { background:#0b1120; color:#fff; font-family:-apple-system,BlinkMacSystemFont,sans-serif;
         user-select:none; padding:8px 10px; }
-      h1 { font-size:12px; font-weight:700; color:#94a3b8; padding:0 2px 6px; }
+      h1 { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700;
+        color:#94a3b8; padding:0 2px 6px; }
+      h1 b { color:#fbbf24; }
+      h1 button { margin-left:auto; background:rgba(255,255,255,0.12); color:#fff; border:none;
+        border-radius:6px; padding:3px 8px; font-size:12px; cursor:pointer; }
       .sk { font-size:11px; font-weight:700; opacity:.7; padding:6px 2px 3px; }
       .it { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.07);
-        border-radius:7px; padding:5px 9px; margin-bottom:3px; font-size:14px; line-height:1.3; }
+        border-radius:7px; padding:5px 9px; margin-bottom:3px; font-size:14px; line-height:1.3;
+        cursor:pointer; }
+      .it:hover { background:rgba(255,255,255,0.16); }
+      .bx { width:15px; height:15px; border:1.5px solid rgba(255,255,255,0.6);
+        border-radius:4px; flex-shrink:0; }
       .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .q { margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums; padding-left:8px; }
+      .allok { text-align:center; padding:22px 8px; font-size:14px; color:#86efac; }
     `;
     pip.document.head.appendChild(st);
 
-    const wrap = pip.document.createElement("div");
-    wrap.innerHTML = `<h1>🚢 교역 재료 · 1인분</h1>` + groups.map(g =>
-      `<div class="sk">${SKILL_ICON[g.skill] || "🔧"} ${g.skill}</div>` +
-      g.items.map(({ m }) =>
-        `<div class="it"><span class="nm">${m.n}</span><span class="q">${m.q.toLocaleString()}</span></div>`
-      ).join("")).join("");
-    pip.document.body.appendChild(wrap);
+    const root = pip.document.createElement("div");
+    root.id = "tp-root";
+    pip.document.body.appendChild(root);
+    paintTradePiP();
 
     pip.addEventListener("pagehide", () => { pipWindow = null; pipMode = null; });
   } catch (e) {
