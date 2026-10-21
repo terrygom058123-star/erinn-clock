@@ -417,13 +417,17 @@ const CRAFT_RECIPES = {
   // ── 합성 ──
   "빤짝이 종이": { skill: "합성", mats: [{ n: "작은 녹색구슬", q: 1 }, { n: "작은 은색구슬", q: 1 }, { n: "작은 빨간구슬", q: 1 }, { n: "작은 파란구슬", q: 1 }, { n: "종이", q: 10 }] },
 
-  // ── 6티어 (탈틴 농장 · 시즌2) ──
-  // 탈틴 농장에서 직접 제작하는 완제품이라 하위 재료는 따로 계산하지 않음
-  "펄페인트":  { skill: "탈틴농장", mats: [] },
-  "새벽의 활": { skill: "탈틴농장", mats: [] },
-  "붉은 배잼": { skill: "탈틴농장", mats: [] },
-  "레드문":    { skill: "탈틴농장", mats: [] },
-  "자색원단":  { skill: "탈틴농장", mats: [] },
+  // ── 6티어 (2026년 10월 시즌 · 라바뉴 기준) ──
+  // 매월 첫 목요일 7시에 이리아 물교 6티어 재료가 바뀜 → 그때 이 블록만 갱신
+  "탈틴 농장 붉은 배 잼":   { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 붉은 배", q: 1 }, { n: "탈틴 농장 일반 오크라", q: 1 }] },
+  "탈틴 농장 자색 원단":     { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 마법 거미줄", q: 1 }, { n: "탈틴 농장 일반 블랙베리", q: 1 }] },
+  "탈틴 농장 레드문 귀걸이": { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 석영", q: 1 }, { n: "탈틴 농장 일반 붉은 배", q: 1 }] },
+  "탈틴 농장 별무늬 샐러드": { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 붉은 배", q: 1 }, { n: "탈틴 농장 일반 오크라", q: 2 }, { n: "탈틴 농장 일반 블랙베리", q: 1 }] },
+  "탈틴 농장 이브닝 드레스": { skill: "탈틴농장", mats: [{ n: "탈틴 농장 일반 석영", q: 1 }, { n: "탈틴 농장 일반 마법 거미줄", q: 2 }, { n: "탈틴 농장 일반 재스민", q: 1 }] },
+  "루멘 시럽":             { skill: "포션 조제",   mats: [{ n: "루멘 플랜트", q: 25 }, { n: "설련화", q: 25 }, { n: "베이스 허브", q: 20 }] },
+  "월광 기어":             { skill: "힐웬 공학",   mats: [{ n: "힐웬 광정", q: 15 }, { n: "월광 당근", q: 40 }] },
+  "월광 여울 이삭빵 박스":   { skill: "핸디크래프트", mats: [{ n: "월광 당근", q: 30 }, { n: "여울 이삭", q: 20 }, { n: "종이", q: 20 }] },
+  "산딸기 크림 소스 박스":   { skill: "핸디크래프트", mats: [{ n: "브리움 우유", q: 5 }, { n: "산딸기", q: 40 }, { n: "종이", q: 20 }] },
 
   // ── 요리 (재료 비율로 제작) ──
   "새우 조련 미끼": { skill: "요리", ratio: true, mats: [{ n: "설탕", q: 38 }, { n: "마늘", q: 32 }, { n: "새우", q: 30 }] },
@@ -437,6 +441,7 @@ const TRADE_POSTS = [
       { t: 3, name: "익시온의 뿔",      qty: 10, mats: [{ n: "마리오네트 500 포션", q: 30 }, { n: "금판", q: 50 }] },
       { t: 4, name: "화산 도마뱀의 알",   qty: 8,  mats: [{ n: "빤짝이 종이", q: 40 }, { n: "최고급 옷감", q: 40 }, { n: "생명력 500 포션", q: 16 }] },
       { t: 5, name: "라스파 흑표범의 가죽", qty: 3,  mats: [{ n: "뮤턴트", q: 3 }, { n: "조화의 코스모스 퍼퓸", q: 6 }, { n: "특급 나무장작", q: 9 }] },
+      { t: 6, name: "붉은 물고기 조각상", qty: 2,  mats: [{ n: "월광 여울 이삭빵 박스", q: 2 }, { n: "산딸기 크림 소스 박스", q: 2 }] },
     ],
   },
   {
@@ -445,7 +450,7 @@ const TRADE_POSTS = [
       { t: 3, name: "스톤 홀스 조각상",   qty: 10, mats: [{ n: "힐웬 합금", q: 20 }, { n: "밀가루", q: 50 }] },
       { t: 4, name: "카루 표고 버섯",      qty: 8,  mats: [{ n: "스핀 기어", q: 8 }, { n: "중급 나무장작", q: 40 }, { n: "고급 실크", q: 32 }] },
       { t: 5, name: "조개 껍질 화석",      qty: 3,  mats: [{ n: "에너지 증폭 장치", q: 6 }, { n: "튼튼한 고리", q: 3 }, { n: "마법의 깃털펜", q: 15 }] },
-      { t: 6, name: "카루숲 수액 향초",   qty: 3,  mats: [{ n: "붉은 배잼", q: 3 }, { n: "레드문", q: 3 }, { n: "자색원단", q: 3 }] },
+      { t: 6, name: "나무 조각 퍼즐",     qty: 3,  mats: [{ n: "탈틴 농장 붉은 배 잼", q: 3 }, { n: "탈틴 농장 자색 원단", q: 3 }, { n: "탈틴 농장 레드문 귀걸이", q: 3 }] },
     ],
   },
   {
@@ -454,7 +459,7 @@ const TRADE_POSTS = [
       { t: 3, name: "오아시스 그림",      qty: 10, mats: [{ n: "최고급 가죽끈", q: 10 }, { n: "질긴 실", q: 30 }] },
       { t: 4, name: "선인장 꽃",         qty: 8,  mats: [{ n: "정령의 리큐르", q: 8 }, { n: "은판", q: 16 }, { n: "고급 옷감", q: 32 }] },
       { t: 5, name: "거대 송곳니 화석",   qty: 3,  mats: [{ n: "펫 놀이세트", q: 3 }, { n: "건초 더미", q: 9 }, { n: "마력이 깃든 나무장작", q: 15 }] },
-      { t: 6, name: "태양의 도자기",      qty: 2,  mats: [{ n: "펄페인트", q: 2 }, { n: "새벽의 활", q: 2 }] },
+      { t: 6, name: "바람의 물병",        qty: 2,  mats: [{ n: "탈틴 농장 별무늬 샐러드", q: 2 }, { n: "탈틴 농장 이브닝 드레스", q: 2 }] },
     ],
   },
   {
@@ -463,6 +468,7 @@ const TRADE_POSTS = [
       { t: 3, name: "온천 입욕제",    qty: 10, mats: [{ n: "끈끈이 풀", q: 30 }, { n: "최고급 바닐라 향초", q: 20 }] },
       { t: 4, name: "대형 캠핑 텐트",  qty: 8,  mats: [{ n: "인조 잔디", q: 8 }, { n: "에메랄드 퓨즈", q: 8 }, { n: "고급 가죽끈", q: 40 }] },
       { t: 5, name: "핑크 솔트",     qty: 3,  mats: [{ n: "미스릴 대못", q: 9 }, { n: "발리스타용 독 묻은 와이번 볼트", q: 9 }, { n: "최고급 나무장작", q: 9 }] },
+      { t: 6, name: "물의 정령 조각상", qty: 2,  mats: [{ n: "루멘 시럽", q: 2 }, { n: "월광 기어", q: 2 }] },
     ],
   } ];
 
@@ -768,16 +774,14 @@ const SKILL_ICON = {
 // skills: 이 스킬 재료를 통째로 담당 / items: 스킬과 무관하게 이 재료만 따로 담당(우선 적용)
 const TRADE_ASSIGNEES = [
   // 담당자는 이름만 두고, 어떤 재료를 맡을지는 앱에서 직접 배정
-  { name: "잠댕이",   icon: "⚒️", skills: [] },
-  { name: "흑쟈헬스", icon: "⚙️", skills: [] },
   { name: "너나들이", icon: "✨", skills: [] },
   { name: "참선",     icon: "🧵", skills: [] },
   { name: "각자",     icon: "👥",
     skills: ["합성", "핀즈 크래프트", "필기구 크래프트", "핸디크래프트", "포션 조제"],
     items: ["최고급 가죽끈", "고급 가죽끈"] } ];
 const UNASSIGNED = { name: "미지정", icon: "❓", skills: [] };
-const PARTY_SIZE = 4;                 // 4명이 함께 교역
-const SELF_ASSIGNEE = "각자";          // '각자'는 본인 것만 준비하므로 4명분 계산 제외
+const PARTY_SIZE = 2;                 // 2명이 함께 교역
+const SELF_ASSIGNEE = "각자";          // '각자'는 본인 것만 준비하므로 인원수 계산 제외
 
 // 사용자가 배정한 담당  { 재료명: 담당자이름 }
 let matAssign = JSON.parse(localStorage.getItem("erinn-assign") || "{}");
@@ -831,51 +835,38 @@ const ROUTE_MAP_NODES = {
 const TRADE_ROUTES = [
   {
     id: "r1", name: "1차", cert: "임프의 고급 보증서",
-    path: ["페라", "칼리다", "셀라 항구", "케안 항구", "타라"],
-    pathLabel: "페라(자르딘 해변) → 칼리다 → 셀라 항구 → 케안 항구 → 타라",
+    path: ["페라", "칼리다", "오아시스"],
+    pathLabel: "자르딘(페라) → 칼리다 → 오아시스 → 남쪽 배",
+    note: "자르딘에서 전부 사고, 칼리다·오아시스는 5·4티어만",
     load: [
       { post: "페라 교역소", icon: "🌋", items: [
-        { n: "라스파 흑표범의 가죽", q: 3 }, { n: "화산 도마뱀의 알", q: 7 },
-        { n: "익시온의 뿔", q: 10 } ] },
+        { n: "붉은 물고기 조각상", q: 2 }, { n: "라스파 흑표범의 가죽", q: 3 },
+        { n: "화산 도마뱀의 알", q: 8 }, { n: "익시온의 뿔", q: 10 } ] },
       { post: "칼리다 교역소", icon: "♨️", items: [
-        { n: "핑크 솔트", q: 3 }, { n: "대형 캠핑 텐트", q: 7 },
-        { n: "온천 입욕제", q: 10 } ] } ],
-  },
-  {
-    id: "r2", name: "2차", cert: "임프 보증서",
-    path: ["페라", "칼리다", "코르"],
-    pathLabel: "페라(자르딘 해변) → 칼리다 → 코르",
-    load: [
-      { post: "페라 교역소", icon: "🌋", items: [
-        { n: "화산 도마뱀의 알", q: 1 } ] },
-      { post: "칼리다 교역소", icon: "♨️", items: [
-        { n: "대형 캠핑 텐트", q: 1 } ] } ],
-  },
-  {
-    id: "r3", name: "3차", cert: "임프의 고급 보증서",
-    path: ["오아시스", "카루숲", "켈라 항구", "카브 항구", "타라"],
-    pathLabel: "오아시스 → 카루숲(카루숲 남쪽) → 켈라 항구 → 카브 항구 → 타라",
-    load: [
+        { n: "핑크 솔트", q: 3 }, { n: "대형 캠핑 텐트", q: 7 } ] },
       { post: "오아시스 교역소", icon: "🏜️", items: [
-        { n: "거대 송곳니 화석", q: 3 }, { n: "선인장 꽃", q: 7 },
+        { n: "거대 송곳니 화석", q: 3 }, { n: "선인장 꽃", q: 7 } ] } ],
+  },
+  {
+    id: "r2", name: "2차", cert: "임프의 고급 보증서",
+    path: ["칼리다", "오아시스", "카루숲"],
+    pathLabel: "칼리다 → 오아시스 → 카루숲 남쪽",
+    note: "1차에 안 실은 나머지 (주간 한도까지)",
+    load: [
+      { post: "칼리다 교역소", icon: "♨️", items: [
+        { n: "물의 정령 조각상", q: 2 }, { n: "대형 캠핑 텐트", q: 1 },
+        { n: "온천 입욕제", q: 10 } ] },
+      { post: "오아시스 교역소", icon: "🏜️", items: [
+        { n: "바람의 물병", q: 2 }, { n: "선인장 꽃", q: 1 },
         { n: "오아시스 그림", q: 10 } ] },
       { post: "카루숲 교역소", icon: "🌲", items: [
-        { n: "조개 껍질 화석", q: 3 }, { n: "카루 표고 버섯", q: 7 },
-        { n: "스톤 홀스 조각상", q: 10 } ] } ],
-  },
-  {
-    id: "r4", name: "4차", cert: "임프 보증서",
-    path: ["카루숲", "오아시스", "코르"],
-    pathLabel: "카루숲(카루숲 남쪽) → 오아시스 → 코르",
-    load: [
-      { post: "카루숲 교역소", icon: "🌲", items: [
-        { n: "카루 표고 버섯", q: 1 } ] },
-      { post: "오아시스 교역소", icon: "🏜️", items: [
-        { n: "선인장 꽃", q: 1 } ] } ],
+        { n: "나무 조각 퍼즐", q: 3 }, { n: "조개 껍질 화석", q: 3 },
+        { n: "카루 표고 버섯", q: 8 }, { n: "스톤 홀스 조각상", q: 10 } ] } ],
   } ];
 
 let routeState = JSON.parse(localStorage.getItem("erinn-route") || "{}");
 let routeCur   = localStorage.getItem("erinn-route-cur") || "r1";
+if (!["r1", "r2"].includes(routeCur)) routeCur = "r1";   // 3·4차 없어짐
 function saveRouteState() { localStorage.setItem("erinn-route", JSON.stringify(routeState)); }
 function routeKey(rid, post, item) { return `${rid}|${post}|${item}`; }
 function routeDone(rid, post, item) { return !!routeState[routeKey(rid, post, item)]; }
@@ -996,6 +987,7 @@ function renderRoutesHtml() {
       <div>
         <div class="route-title">🗺️ ${r.name} 물물교역 루트</div>
         <div class="route-cert">★ ${r.cert} 추천</div>
+        ${r.note ? `<div class="route-note">${r.note}</div>` : ""}
       </div>
       <span class="route-prog ${pr.done === pr.total ? "done" : ""}">${pr.done}/${pr.total}</span>
     </div>
@@ -1168,7 +1160,7 @@ function renderTrade() {
       s + g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length, 0);
 
     html += `<div class="all-summary">👥 담당 ${groups.length}명 · 재료 ${totalMats}종 중 <b>${totalDone}종</b> 완료
-      <div class="all-sub">담당 4명이 ${PARTY_SIZE * tradeWeeks}명분씩 제작 · '${SELF_ASSIGNEE}'는 각 개인이 ${tradeWeeks}인분씩 구매</div></div>`;
+      <div class="all-sub">담당 ${PARTY_SIZE}명이 ${PARTY_SIZE * tradeWeeks}명분씩 제작 · '${SELF_ASSIGNEE}'는 각 개인이 ${tradeWeeks}인분씩 구매</div></div>`;
     html += groups.map(g => {
       const doneCnt = g.items.filter(({ post: p, ti, m }) => matCount(p.id, ti.t, m.n) >= unitsMaxOf(m.n)).length;
       const allDone = doneCnt === g.items.length;

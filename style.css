@@ -659,3 +659,4 @@ body {
 .horn-when { font-size: 11px; color: var(--text-3); }
 .horn-msg { font-size: 13px; color: var(--text); line-height: 1.5; word-break: break-all; }
 .horn-empty { text-align: center; color: var(--text-3); font-size: 13px; padding: 22px 10px; }
+.route-note { font-size: 11px; color: var(--text-3); margin-top: 3px; }
