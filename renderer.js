@@ -1668,7 +1668,8 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
 const miniBtn = document.getElementById("btn-mini-clock");
 let miniClockOn = false;
 let pipWindow = null;
-let pipEls = null;  // { period, time, icon }
+let pipEls = null;
+let pipSealOpen = false;   // 미니 창에서 인장 퀘스트를 펼쳤는지  // { period, time, icon }
 
 function setMiniBtn(on) {
   miniClockOn = on;
@@ -1716,9 +1717,9 @@ async function toggleWebPiP() {
       border-radius:4px; flex-shrink:0; }
     .dn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .dmore { font-size:10px; color:rgba(255,255,255,0.6); text-align:center; padding-top:2px; }
-    .drow.info { cursor:default; opacity:.85; }
-    .drow.info:hover { background:rgba(255,255,255,0.08); }
-    .dbox.sub { border-style:dashed; }
+    .drow.seal { background:rgba(255,255,255,0.16); font-weight:600; }
+    .darrow { width:13px; text-align:center; flex-shrink:0; font-size:11px; opacity:.8; }
+    .drow.sub2 { margin-left:12px; background:rgba(255,255,255,0.05); font-size:11px; }
     /* 알람 오버레이 */
     .alarm { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
       gap:6px; padding:8px; text-align:center; animation:flash 0.6s infinite; }
@@ -1797,22 +1798,42 @@ function updatePiP() {
   });
 
   // 남은 매일 할일 — 창을 키운 만큼 더 보여주고, 눌러서 바로 체크
-  const all = remainingDailyTodos();
+  // 인장은 머리줄을 눌러 남은 퀘스트를 펼쳤다 접을 수 있다
+  const flat = [];
+  remainingDailyTodos().forEach(t => {
+    if (!t.sub) { flat.push({ kind: "todo", id: t.id, name: t.name }); return; }
+    flat.push({ kind: "seal", id: t.id, name: t.name });
+    if (!pipSealOpen) return;
+    const it = hwList.daily.find(x => x.id === t.id);
+    it.subs.forEach((q, i) => {
+      if (!homework.daily[hwSubKey(it.id, i)]) flat.push({ kind: "sub", id: it.id, i, name: `${i + 1}. ${q}` });
+    });
+  });
+
   const used = 104 + running.length * 32;                  // 시계 + 작업 타이머가 쓰는 높이
   const room = Math.floor(((pipWindow.innerHeight || 150) - used) / 24);
-  const todos = all.slice(0, Math.max(0, room));
-  const hidden = all.length - todos.length;
-  pipEls.todosEl.innerHTML = todos.map(t => t.sub
-    // 인장처럼 하위 퀘스트가 있는 건 한 번에 다 끝낼 수 없으니 진행만 보여줌
-    ? `<div class="drow info"><span class="dbox sub"></span><span class="dn">${t.name}</span></div>`
-    : `<div class="drow" data-id="${t.id}"><span class="dbox"></span><span class="dn">${t.name}</span></div>`
-  ).join("") + (hidden > 0
+  const shown  = flat.slice(0, Math.max(0, room));
+  const hidden = flat.length - shown.length;
+  pipEls.todosEl.innerHTML = shown.map(r => {
+    if (r.kind === "seal") return `<div class="drow seal" data-seal="1">
+        <span class="darrow">${pipSealOpen ? "⌄" : "›"}</span><span class="dn">${r.name}</span></div>`;
+    if (r.kind === "sub")  return `<div class="drow sub2" data-sub="${r.id}" data-i="${r.i}">
+        <span class="dbox"></span><span class="dn">${r.name}</span></div>`;
+    return `<div class="drow" data-id="${r.id}"><span class="dbox"></span><span class="dn">${r.name}</span></div>`;
+  }).join("") + (hidden > 0
     ? `<div class="dmore">⌄ 창을 키우면 ${hidden}개 더 보여요</div>` : "");
+
+  const check = () => { saveHomework(); renderHomework(); updatePiP(); };
   pipEls.todosEl.querySelectorAll(".drow[data-id]").forEach(el => {
+    el.addEventListener("click", () => { homework.daily[el.dataset.id] = true; check(); });
+  });
+  pipEls.todosEl.querySelectorAll(".drow[data-sub]").forEach(el => {
     el.addEventListener("click", () => {
-      homework.daily[el.dataset.id] = true;
-      saveHomework(); renderHomework(); updatePiP();
+      homework.daily[hwSubKey(el.dataset.sub, el.dataset.i)] = true; check();
     });
+  });
+  pipEls.todosEl.querySelectorAll(".drow[data-seal]").forEach(el => {
+    el.addEventListener("click", () => { pipSealOpen = !pipSealOpen; updatePiP(); });
   });
 
 }
