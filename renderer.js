@@ -885,12 +885,46 @@ const PARTY_SIZE = 2;                 // 2명이 함께 교역
 const SELF_ASSIGNEE = "각자";          // '각자'는 본인 것만 준비하므로 인원수 계산 제외
 
 // 사용자가 배정한 담당  { 재료명: 담당자이름 }
+// 맥 앱에 저장돼 있던 담당 배정을 기본값으로 (모든 기기가 같은 배정으로 시작)
+const DEFAULT_ASSIGN = {
+  "금판": "너나들이",
+  "은판": "너나들이",
+  "미스릴 대못": "너나들이",
+  "밀가루": "참선",
+  "최고급 옷감": "참선",
+  "고급 실크": "참선",
+  "튼튼한 고리": "참선",
+  "질긴 실": "참선",
+  "고급 옷감": "참선",
+  "특급 나무장작": "각자",
+  "중급 나무장작": "각자",
+  "최고급 나무장작": "각자",
+  "스핀 기어": "참선",
+  "에너지 증폭 장치": "참선",
+  "에메랄드 퓨즈": "참선",
+  "힐웬 합금": "참선",
+  "뮤턴트": "너나들이",
+  "마력이 깃든 나무장작": "너나들이",
+  "끈끈이 풀": "너나들이",
+  "탈틴 농장 붉은 배 잼": "참선",
+  "탈틴 농장 자색 원단": "참선",
+  "탈틴 농장 레드문 귀걸이": "참선",
+  "탈틴 농장 별무늬 샐러드": "참선",
+  "탈틴 농장 이브닝 드레스": "참선",
+};
+
 let matAssign = JSON.parse(localStorage.getItem("erinn-assign") || "{}");
+// 기기마다 배정이 달라져 있어서 맥 기준으로 한 번 맞춤
+if (!localStorage.getItem("erinn-assign-sync1")) {
+  matAssign = { ...DEFAULT_ASSIGN, ...matAssign };
+  localStorage.setItem("erinn-assign", JSON.stringify(matAssign));
+  localStorage.setItem("erinn-assign-sync1", "1");
+}
 function saveAssign() { localStorage.setItem("erinn-assign", JSON.stringify(matAssign)); }
 function allAssignees() { return [...TRADE_ASSIGNEES, UNASSIGNED]; }
 
 function assigneeOf(matName) {
-  const picked = matAssign[matName];
+  const picked = matAssign[matName] || DEFAULT_ASSIGN[matName];
   if (picked) return allAssignees().find(a => a.name === picked) || UNASSIGNED;
   // 배정 전이면 '각자'(개인 구매) 기본 규칙만 적용
   const self = TRADE_ASSIGNEES.find(a => a.name === SELF_ASSIGNEE);
