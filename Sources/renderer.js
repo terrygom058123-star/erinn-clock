@@ -130,13 +130,21 @@ renderTasks();
 
 // ─── 마비노기 숙제 (매일 6시 / 주간 월요일 6시 리셋) ─────────
 // ─── 매일/주간 할일 (사용자가 직접 추가·수정) ───
+// 모험가의 인장 일일 퀘스트
+const SEAL_QUESTS = [
+  "모나트", "히커의 엄마", "마독", "마놀린", "로드미션 1릴",
+  "던바튼 정찰", "음식 먹기", "랄프", "퍄다루루 - 꼬물이", "생태학자",
+  "여자 자이언트 굴착 전문가", "정보대원 - 고스트 처치",
+  "알렉시나 - 유물 10개 발견", "램버트 박사 - 자동 길찾기 이용", "베테랑" ];
+
 const DEFAULT_HW = {
   daily: [
     { id: "d1", name: "블루밍" },
     { id: "d2", name: "베테랑/빛구/로드(크리스탈)" },
     { id: "d3", name: "탐험대 보내기" },
     { id: "d4", name: "리플레이" },
-    { id: "d5", name: "탈농" } ],
+    { id: "d5", name: "탈농" },
+    { id: "d6", name: "모험가의 인장", subs: SEAL_QUESTS } ],
   weekly: [
     { id: "w1", name: "네아르", target: 10 },
     { id: "w2", name: "크롬",   target: 10 },
@@ -147,6 +155,13 @@ let hwList = JSON.parse(localStorage.getItem("erinn-hw-list") || "null")
           || JSON.parse(JSON.stringify(DEFAULT_HW));
 if (!hwList.daily)  hwList.daily = [];
 if (!hwList.weekly) hwList.weekly = [];
+// 이미 할일을 저장해 둔 사용자에게도 인장이 보이도록 한 번만 추가
+if (!hwList.daily.some(it => it.subs)) {
+  hwList.daily.push({ id: "d6", name: "모험가의 인장", subs: SEAL_QUESTS });
+  localStorage.setItem("erinn-hw-list", JSON.stringify(hwList));
+}
+// 펼침 상태는 앱을 껐다 켜도 유지
+let hwOpen = JSON.parse(localStorage.getItem("erinn-hw-open") || "{}");
 function saveHwList() { localStorage.setItem("erinn-hw-list", JSON.stringify(hwList)); }
 function newHwId() { return "h" + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
 
@@ -179,6 +194,13 @@ function syncHomeworkPeriod() {
   saveHomework();
 }
 
+// 하위 퀘스트가 있으면 전부 체크해야 완료
+function hwSubKey(id, i) { return `${id}|${i}`; }
+function hwSubCount(it) { return it.subs.filter((_, i) => homework.daily[hwSubKey(it.id, i)]).length; }
+function hwItemDone(it) {
+  return it.subs ? hwSubCount(it) === it.subs.length : !!homework.daily[it.id];
+}
+
 function renderHomework() {
   syncHomeworkPeriod();
 
@@ -190,12 +212,36 @@ function renderHomework() {
   dailyEl.innerHTML = hwList.daily.length === 0
     ? `<div class="hw-empty">할일이 없어요. <b>+ 추가</b>를 눌러 만들어 보세요.</div>`
     : hwList.daily.map(it => {
-        const done = !!homework.daily[it.id];
+        const done = hwItemDone(it);
+        if (!it.subs) {
+          return `
+          <div class="hw-item ${done ? "done" : ""}" data-kind="daily" data-id="${it.id}">
+            <div class="hw-check">${done ? "✓" : ""}</div>
+            <div class="hw-name">${it.name}</div>
+            <button class="hw-edit" data-kind="daily" data-id="${it.id}" title="수정">✏️</button>
+          </div>`;
+        }
+        // 하위 퀘스트가 있는 할일 — 눌러서 펼치기
+        const cnt  = hwSubCount(it);
+        const open = !!hwOpen[it.id];
+        const subs = it.subs.map((q, i) => {
+          const sd = !!homework.daily[hwSubKey(it.id, i)];
+          return `
+          <div class="hw-sub ${sd ? "done" : ""}" data-gid="${it.id}" data-i="${i}">
+            <div class="hw-check">${sd ? "✓" : ""}</div>
+            <div class="hw-name">${i + 1}. ${q}</div>
+          </div>`;
+        }).join("");
         return `
-        <div class="hw-item ${done ? "done" : ""}" data-kind="daily" data-id="${it.id}">
-          <div class="hw-check">${done ? "✓" : ""}</div>
-          <div class="hw-name">${it.name}</div>
-          <button class="hw-edit" data-kind="daily" data-id="${it.id}" title="수정">✏️</button>
+        <div class="hw-group-wrap ${open ? "open" : ""}">
+          <div class="hw-item hw-group ${done ? "done" : ""}" data-gid="${it.id}">
+            <div class="hw-check">${done ? "✓" : ""}</div>
+            <div class="hw-name">${it.name}</div>
+            <div class="hw-sub-prog">${cnt} / ${it.subs.length}</div>
+            <span class="hw-arrow">▶</span>
+            <button class="hw-edit" data-kind="daily" data-id="${it.id}" title="수정">✏️</button>
+          </div>
+          <div class="hw-subs">${subs}</div>
         </div>`;
       }).join("");
 
@@ -219,10 +265,27 @@ function renderHomework() {
       }).join("");
 
   // 매일 체크 토글 (수정 버튼 제외)
-  dailyEl.querySelectorAll(".hw-item").forEach(el => {
+  dailyEl.querySelectorAll(".hw-item:not(.hw-group)").forEach(el => {
     el.addEventListener("click", () => {
       const id = el.dataset.id;
       homework.daily[id] = !homework.daily[id];
+      saveHomework(); renderHomework();
+    });
+  });
+  // 인장처럼 하위 퀘스트가 있는 할일: 머리줄은 펼치기, 하위 줄은 체크
+  dailyEl.querySelectorAll(".hw-group").forEach(el => {
+    el.addEventListener("click", () => {
+      const gid = el.dataset.gid;
+      hwOpen[gid] = !hwOpen[gid];
+      localStorage.setItem("erinn-hw-open", JSON.stringify(hwOpen));
+      renderHomework();
+    });
+  });
+  dailyEl.querySelectorAll(".hw-sub").forEach(el => {
+    el.addEventListener("click", e => {
+      e.stopPropagation();
+      const k = hwSubKey(el.dataset.gid, el.dataset.i);
+      homework.daily[k] = !homework.daily[k];
       saveHomework(); renderHomework();
     });
   });
@@ -252,7 +315,7 @@ function renderHomework() {
   }));
 
   // 진행 카운트
-  const dDone = hwList.daily.filter(it => homework.daily[it.id]).length;
+  const dDone = hwList.daily.filter(hwItemDone).length;
   const wDone = hwList.weekly.filter(it => (homework.weekly[it.id] || 0) >= it.target).length;
   document.getElementById("hw-daily-count").textContent  = `${dDone}/${hwList.daily.length}`;
   document.getElementById("hw-weekly-count").textContent = `${wDone}/${hwList.weekly.length}`;
