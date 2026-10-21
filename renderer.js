@@ -1698,6 +1698,17 @@ async function toggleWebPiP() {
     .trestart { background:#16a34a; color:#fff; border:none; border-radius:7px;
       padding:4px 10px; font-size:12px; font-weight:600; cursor:pointer; }
     .trestart:active { background:#15803d; }
+    /* 매일 할일 */
+    .todos { display:flex; flex-direction:column; gap:3px; width:100%; padding:0 12px 2px; }
+    .drow { display:flex; align-items:center; gap:6px; cursor:pointer;
+      background:rgba(255,255,255,0.08); border-radius:7px; padding:4px 8px; font-size:12px; }
+    .drow:hover { background:rgba(255,255,255,0.16); }
+    .dbox { width:13px; height:13px; border:1.5px solid rgba(255,255,255,0.55);
+      border-radius:4px; flex-shrink:0; }
+    .dn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .drow.info { cursor:default; opacity:.85; }
+    .drow.info:hover { background:rgba(255,255,255,0.08); }
+    .dbox.sub { border-style:dashed; }
     /* 알람 오버레이 */
     .alarm { position:fixed; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
       gap:6px; padding:8px; text-align:center; animation:flash 0.6s infinite; }
@@ -1721,6 +1732,10 @@ async function toggleWebPiP() {
   const tasksEl = pip.document.createElement("div"); tasksEl.className = "tasks";
   pip.document.body.appendChild(tasksEl);
 
+  // 매일 할일 영역
+  const todosEl = pip.document.createElement("div"); todosEl.className = "todos";
+  pip.document.body.appendChild(todosEl);
+
   // 알람 오버레이 (울릴 때 이 창에서 바로 끄기)
   const alarmLayer = pip.document.createElement("div"); alarmLayer.className = "alarm";
   const an = pip.document.createElement("div"); an.className = "an"; an.textContent = "알람";
@@ -1730,7 +1745,7 @@ async function toggleWebPiP() {
   alarmLayer.appendChild(an); alarmLayer.appendChild(at); alarmLayer.appendChild(off);
   pip.document.body.appendChild(alarmLayer);
 
-  pipEls = { period, time, icon, tasksEl, alarmLayer, an, at };
+  pipEls = { period, time, icon, tasksEl, todosEl, alarmLayer, an, at };
   updatePiP();
   if (activeAlert) showPiPAlarm(activeAlert);  // 이미 울리는 중이면 표시
 
@@ -1771,9 +1786,23 @@ function updatePiP() {
     btn.addEventListener("click", () => startTaskById(btn.dataset.id));
   });
 
-  // 창 높이 자동 조절 (시계 + 작업 수)
+  // 남은 매일 할일 — 눌러서 바로 체크
+  const todos = remainingDailyTodos();
+  pipEls.todosEl.innerHTML = todos.map(t => t.sub
+    // 인장처럼 하위 퀘스트가 있는 건 한 번에 다 끝낼 수 없으니 진행만 보여줌
+    ? `<div class="drow info"><span class="dbox sub"></span><span class="dn">${t.name}</span></div>`
+    : `<div class="drow" data-id="${t.id}"><span class="dbox"></span><span class="dn">${t.name}</span></div>`
+  ).join("");
+  pipEls.todosEl.querySelectorAll(".drow[data-id]").forEach(el => {
+    el.addEventListener("click", () => {
+      homework.daily[el.dataset.id] = true;
+      saveHomework(); renderHomework(); updatePiP();
+    });
+  });
+
+  // 창 높이 자동 조절 (시계 + 작업 + 할일 수)
   try {
-    const h = 110 + running.length * 32;
+    const h = 110 + running.length * 32 + todos.length * 24;
     if (pipWindow.innerHeight && Math.abs(pipWindow.innerHeight - h) > 8) {
       pipWindow.resizeTo(pipWindow.outerWidth || 220, h);
     }
@@ -1904,10 +1933,22 @@ function currentRunningTasks() {
     }));
 }
 
+// 미니 시계에 띄울 남은 매일 할일 (최대 5줄)
+function remainingDailyTodos() {
+  if (typeof hwList === "undefined") return [];
+  syncHomeworkPeriod();
+  return hwList.daily.filter(it => !hwItemDone(it)).map(it => ({
+    id: it.id,
+    name: it.subs ? `${it.name} ${hwSubCount(it)}/${it.subs.length}` : it.name,
+    sub: !!it.subs,          // 하위 퀘스트가 있는 건 미니 창에서 체크하지 않음
+  })).slice(0, 5);
+}
+
 function syncToNative() {
   if (!NATIVE) return;
   window.webkit.messageHandlers.sync.postMessage({
     offsetSec, alarms: currentEnabledAlarms(), tasks: currentRunningTasks(),
+    todos: remainingDailyTodos().map(t => t.name),
   });
 }
 

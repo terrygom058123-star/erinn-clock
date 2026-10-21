@@ -17,6 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKUI
     var offsetSec: Int = 0
     var alarms: [[String: Any]] = []   // {id, label, h, m}
     var tasks:  [[String: Any]] = []   // {id, label, endAt(ms)}
+    var todos:  [String] = []          // 남은 매일 할일
     var lastFired: [String: TimeInterval] = [:]
     var engineTimer: Timer?
     var activityToken: NSObjectProtocol?   // App Nap 방지
@@ -177,6 +178,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKUI
                     let mmss = remSec <= 0 ? "완료!" : String(format: "%02d:%02d", remSec / 60, remSec % 60)
                     lines.append("\(icon) \(name)  \(mmss)")
                 }
+                // 남은 매일 할일 (작업 타이머 아래에 이어서)
+                if !todos.isEmpty {
+                    if !lines.isEmpty { lines.append("") }
+                    for t in todos { lines.append("☐ \(t)") }
+                }
                 let txt = lines.joined(separator: "\n")
                 if let tasksField = miniTasks {
                     tasksField.textColor = NSColor(calibratedRed: 0.52, green: 0.80, blue: 0.45, alpha: 1)
@@ -277,6 +283,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKUI
                     if !ids.contains(String(key.dropFirst(5))) { lastFired[key] = nil }
                 }
                 tasks = newTasks
+                todos = body["todos"] as? [String] ?? []
             }
         case "toggleMiniClock":
             DispatchQueue.main.async { self.toggleMiniClock() }
