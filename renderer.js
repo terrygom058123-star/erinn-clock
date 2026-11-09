@@ -2247,9 +2247,6 @@ const clockPeriod  = document.getElementById("clock-period");
 const clockDigits  = document.getElementById("clock-digits");
 const clockAlarm   = document.getElementById("clock-alarm");
 const alarmList    = document.getElementById("alarm-list");
-const alertOverlay = document.getElementById("alert-overlay");
-const alertName    = document.getElementById("alert-name");
-const alertTimeEl  = document.getElementById("alert-time");
 const offsetNote   = document.getElementById("offset-note");
 
 // ─── 보정 셀렉트 초기화 ───────────────────────────────────
@@ -2322,8 +2319,7 @@ function flashClockCard(label, sub) {
   clockCard.classList.add("alarm-flash");
   // 어떤 알람인지(이름 + 에린 시각) + 끄기 안내
   clockAlarm.hidden = false;
-  clockAlarm.textContent = sub ? `⏰ ${label} · ${sub} · 눌러서 끄기`
-                               : `⏰ ${label} · 눌러서 끄기`;
+  clockAlarm.textContent = `⏰ ${label} · 눌러서 끄기`;
 }
 function clearClockFlash() {
   clockCard.classList.remove("alarm-flash");
@@ -2396,7 +2392,6 @@ clockCard.addEventListener("click", e => {
   if (activeAlert) dismissAlert();
 });
 // 기존 오버레이(있으면)도 닫기 호환
-if (alertOverlay) alertOverlay.addEventListener("click", dismissAlert);
 const alertDismissBtn = document.getElementById("alert-dismiss");
 if (alertDismissBtn) alertDismissBtn.addEventListener("click", e => { e.stopPropagation(); dismissAlert(); });
 

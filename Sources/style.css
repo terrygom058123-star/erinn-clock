@@ -126,7 +126,13 @@ body {
   font-size: 24px; font-weight: 300; letter-spacing: -.5px;
   font-variant-numeric: tabular-nums;
 }
-.clock-bar .clock-alarm { flex: 1; font-size: 12px; font-weight: 700; text-align: right; }
+.clock-bar .clock-alarm {
+  flex: 1; min-width: 0; font-size: 12px; font-weight: 700; text-align: right;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 알람이 울리는 동안은 자리를 비워 알람 문구가 가려지지 않게 */
+.clock-bar.alarm-flash .clock-period,
+.clock-bar.alarm-flash .btn-mini-clock { display: none; }
 .clock-bar.alarm-flash { animation: cardAlarm .7s ease-in-out infinite; cursor: pointer; }
 @keyframes cardAlarm {
   0%,100% { background: #e5484d !important; }
